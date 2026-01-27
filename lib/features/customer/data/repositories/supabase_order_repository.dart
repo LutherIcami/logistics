@@ -1,0 +1,91 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../domain/models/order_model.dart';
+import 'order_repository.dart';
+
+class SupabaseOrderRepository implements OrderRepository {
+  final SupabaseClient client;
+
+  SupabaseOrderRepository(this.client);
+
+  @override
+  Future<List<Order>> getOrders() async {
+    try {
+      final response = await client
+          .from('orders')
+          .select()
+          .order('orderDate', ascending: false);
+      return (response as List).map((json) => Order.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch orders: $e');
+    }
+  }
+
+  @override
+  Future<List<Order>> getOrdersByCustomerId(String customerId) async {
+    try {
+      final response = await client
+          .from('orders')
+          .select()
+          .eq('customerId', customerId)
+          .order('orderDate', ascending: false);
+      return (response as List).map((json) => Order.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch orders: $e');
+    }
+  }
+
+  @override
+  Future<Order?> getOrderById(String id) async {
+    try {
+      final response = await client
+          .from('orders')
+          .select()
+          .eq('id', id)
+          .single();
+      return Order.fromJson(response);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  @override
+  Future<Order> createOrder(Order order) async {
+    try {
+      final response = await client
+          .from('orders')
+          .insert(order.toJson())
+          .select()
+          .single();
+      return Order.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to create order: $e');
+    }
+  }
+
+  @override
+  Future<Order> updateOrder(Order order) async {
+    try {
+      final response = await client
+          .from('orders')
+          .update(order.toJson())
+          .eq('id', order.id)
+          .select()
+          .single();
+      return Order.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to update order: $e');
+    }
+  }
+
+  @override
+  Future<void> cancelOrder(String orderId) async {
+    try {
+      await client
+          .from('orders')
+          .update({'status': 'cancelled'})
+          .eq('id', orderId);
+    } catch (e) {
+      throw Exception('Failed to cancel order: $e');
+    }
+  }
+}
