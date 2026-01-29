@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/customer_order_provider.dart';
 import '../../../domain/models/order_model.dart';
+import '/../../../features/auth/presentation/providers/auth_provider.dart';
 
 class NewOrderFormPage extends StatefulWidget {
   const NewOrderFormPage({super.key});
@@ -24,6 +25,32 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
 
   bool _isLoading = false;
   bool _autoCalculateCost = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize customer data when the form loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeCustomerIfNeeded();
+    });
+  }
+
+  Future<void> _initializeCustomerIfNeeded() async {
+    final provider = context.read<CustomerOrderProvider>();
+    if (provider.currentCustomer == null) {
+      // Try to get customer ID from auth provider or use a default
+      try {
+        // This assumes there's an AuthProvider - adjust as needed
+        final authProvider = context.read<AuthProvider>();
+        if (authProvider.user != null) {
+          await provider.initializeCustomer(authProvider.user!.id);
+        }
+      } catch (e) {
+        print('DEBUG: Failed to initialize customer: $e');
+        // If auth provider is not available, you might want to show a login prompt
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -63,13 +90,24 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
 
     final provider = context.read<CustomerOrderProvider>();
     final customer = provider.currentCustomer;
+
+    // Debug: Print customer status
+    print('DEBUG: Customer is null: ${customer == null}');
+    print('DEBUG: Customer ID: ${customer?.id}');
+    print('DEBUG: Customer name: ${customer?.name}');
+    print('DEBUG: Provider error: ${provider.error}');
+
     if (customer == null) {
       setState(() {
         _isLoading = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Customer data not found')),
+          SnackBar(
+            content: Text('Customer data not found. Please log in again.'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
       return;
@@ -119,10 +157,18 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
         );
         context.pop();
       } else {
+        final errorMessage = provider.error ?? 'Failed to create order';
+        print('DEBUG: Order creation failed: $errorMessage');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(provider.error ?? 'Failed to create order'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: Colors.white,
+              onPressed: _submitOrder,
+            ),
           ),
         );
       }
@@ -150,247 +196,304 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
               ),
             )
           else
-            IconButton(
-              icon: const Icon(Icons.check),
-              onPressed: _submitOrder,
-            ),
+            IconButton(icon: const Icon(Icons.check), onPressed: _submitOrder),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green.shade400, Colors.green.shade600],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.green.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+      body: Consumer<CustomerOrderProvider>(
+        builder: (context, provider, child) {
+          if (provider.currentCustomer == null) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.person_off, size: 64, color: Colors.grey[400]),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Customer Data Not Available',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please ensure you are logged in to create an order.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _initializeCustomerIfNeeded();
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Retry'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextButton.icon(
+                      onPressed: () {
+                        context.go('/login');
+                      },
+                      icon: const Icon(Icons.login),
+                      label: const Text('Go to Login'),
                     ),
                   ],
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
+              ),
+            );
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.green.shade400, Colors.green.shade600],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
                         ),
-                        child: const Icon(Icons.add_shopping_cart, color: Colors.white, size: 32),
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.add_shopping_cart,
+                              color: Colors.white,
+                              size: 32,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Create New Order',
+                                  style: Theme.of(context).textTheme.titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Fill in the details below',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Route Information
+                  Text(
+                    'Route Information',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _pickupLocationController,
+                    label: 'Pickup Location',
+                    icon: Icons.location_on,
+                    hintText: 'Enter pickup address',
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter pickup location';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _deliveryLocationController,
+                    label: 'Delivery Location',
+                    icon: Icons.location_on,
+                    hintText: 'Enter delivery address',
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter delivery location';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildTextField(
+                          controller: _distanceController,
+                          label: 'Distance (km)',
+                          icon: Icons.straighten,
+                          keyboardType: TextInputType.number,
+                          hintText: 'Optional',
+                          onChanged: (_) => _calculateCost(),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Create New Order',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Fill in the details below',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                          ],
+                        child: SwitchListTile(
+                          title: const Text('Auto Calculate Cost'),
+                          value: _autoCalculateCost,
+                          onChanged: (value) {
+                            setState(() {
+                              _autoCalculateCost = value;
+                              if (value) {
+                                _calculateCost();
+                              }
+                            });
+                          },
                         ),
                       ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-              // Route Information
-              Text(
-                'Route Information',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  // Cargo Information
+                  Text(
+                    'Cargo Information',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _pickupLocationController,
-                label: 'Pickup Location',
-                icon: Icons.location_on,
-                hintText: 'Enter pickup address',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter pickup location';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _deliveryLocationController,
-                label: 'Delivery Location',
-                icon: Icons.location_on,
-                hintText: 'Enter delivery address',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter delivery location';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _distanceController,
-                      label: 'Distance (km)',
-                      icon: Icons.straighten,
-                      keyboardType: TextInputType.number,
-                      hintText: 'Optional',
-                      onChanged: (_) => _calculateCost(),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _cargoTypeController,
+                    label: 'Cargo Type',
+                    icon: Icons.inventory_2,
+                    hintText: 'e.g., General Cargo, Electronics, Perishable',
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter cargo type';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _cargoWeightController,
+                    label: 'Weight (kg)',
+                    icon: Icons.scale,
+                    keyboardType: TextInputType.number,
+                    hintText: 'Optional',
+                    onChanged: (_) => _calculateCost(),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _specialInstructionsController,
+                    label: 'Special Instructions',
+                    icon: Icons.info_outline,
+                    hintText: 'Any special handling requirements...',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Cost Information
+                  Text(
+                    'Cost Information',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SwitchListTile(
-                      title: const Text('Auto Calculate Cost'),
-                      value: _autoCalculateCost,
-                      onChanged: (value) {
-                        setState(() {
-                          _autoCalculateCost = value;
-                          if (value) {
-                            _calculateCost();
-                          }
-                        });
-                      },
+                  const SizedBox(height: 16),
+                  _buildTextField(
+                    controller: _totalCostController,
+                    label: 'Total Cost (KES)',
+                    icon: Icons.attach_money,
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Please enter total cost';
+                      }
+                      final cost = double.tryParse(value);
+                      if (cost == null || cost <= 0) {
+                        return 'Please enter a valid cost';
+                      }
+                      return null;
+                    },
+                    enabled: !_autoCalculateCost,
+                  ),
+                  if (_autoCalculateCost)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.grey[600],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Cost will be calculated based on distance and weight',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 32),
+
+                  // Action Buttons
+                  FilledButton.icon(
+                    onPressed: _isLoading ? null : _submitOrder,
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('Create Order'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                      backgroundColor: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () => context.pop(),
+                    icon: const Icon(Icons.cancel),
+                    label: const Text('Cancel'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-
-              // Cargo Information
-              Text(
-                'Cargo Information',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _cargoTypeController,
-                label: 'Cargo Type',
-                icon: Icons.inventory_2,
-                hintText: 'e.g., General Cargo, Electronics, Perishable',
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter cargo type';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _cargoWeightController,
-                label: 'Weight (kg)',
-                icon: Icons.scale,
-                keyboardType: TextInputType.number,
-                hintText: 'Optional',
-                onChanged: (_) => _calculateCost(),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _specialInstructionsController,
-                label: 'Special Instructions',
-                icon: Icons.info_outline,
-                hintText: 'Any special handling requirements...',
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-
-              // Cost Information
-              Text(
-                'Cost Information',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _totalCostController,
-                label: 'Total Cost (KES)',
-                icon: Icons.attach_money,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter total cost';
-                  }
-                  final cost = double.tryParse(value);
-                  if (cost == null || cost <= 0) {
-                    return 'Please enter a valid cost';
-                  }
-                  return null;
-                },
-                enabled: !_autoCalculateCost,
-              ),
-              if (_autoCalculateCost)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Cost will be calculated based on distance and weight',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 32),
-
-              // Action Buttons
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _submitOrder,
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Create Order'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.cancel),
-                label: const Text('Cancel'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -415,13 +518,56 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
       onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: TextStyle(
+          color: enabled ? Colors.green.shade700 : Colors.grey.shade500,
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+        ),
         hintText: hintText,
-        prefixIcon: Icon(icon),
+        hintStyle: TextStyle(
+          color: Colors.grey.shade500,
+          fontSize: 14,
+          fontStyle: FontStyle.italic,
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: enabled ? Colors.green.shade600 : Colors.grey.shade400,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.green.shade500, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.shade500, width: 2),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
         ),
         filled: true,
-        fillColor: enabled ? Colors.grey[50] : Colors.grey[200],
+        fillColor: enabled ? Colors.grey.shade50 : Colors.grey.shade100,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
+      ),
+      style: TextStyle(
+        color: enabled ? Colors.grey.shade800 : Colors.grey.shade600,
+        fontSize: 16,
       ),
     );
   }

@@ -5,6 +5,7 @@ class SystemSettings {
   final bool enableRegistration;
   final int maintenanceThresholdDays;
   final String currency;
+  final String driverDownloadLink;
 
   SystemSettings({
     this.baseOrderRate = 2000.0,
@@ -13,6 +14,7 @@ class SystemSettings {
     this.enableRegistration = true,
     this.maintenanceThresholdDays = 30,
     this.currency = 'KES',
+    this.driverDownloadLink = 'https://your-app-link.com/download',
   });
 
   Map<String, dynamic> toJson() {
@@ -23,6 +25,7 @@ class SystemSettings {
       'enableRegistration': enableRegistration,
       'maintenanceThresholdDays': maintenanceThresholdDays,
       'currency': currency,
+      'driverDownloadLink': driverDownloadLink,
     };
   }
 
@@ -34,6 +37,8 @@ class SystemSettings {
       enableRegistration: json['enableRegistration'] ?? true,
       maintenanceThresholdDays: json['maintenanceThresholdDays'] ?? 30,
       currency: json['currency'] ?? 'KES',
+      driverDownloadLink:
+          json['driverDownloadLink'] ?? 'https://your-app-link.com/download',
     );
   }
 
@@ -44,6 +49,7 @@ class SystemSettings {
     bool? enableRegistration,
     int? maintenanceThresholdDays,
     String? currency,
+    String? driverDownloadLink,
   }) {
     return SystemSettings(
       baseOrderRate: baseOrderRate ?? this.baseOrderRate,
@@ -53,6 +59,7 @@ class SystemSettings {
       maintenanceThresholdDays:
           maintenanceThresholdDays ?? this.maintenanceThresholdDays,
       currency: currency ?? this.currency,
+      driverDownloadLink: driverDownloadLink ?? this.driverDownloadLink,
     );
   }
 }

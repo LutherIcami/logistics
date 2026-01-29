@@ -83,12 +83,19 @@ class CustomerOrderProvider extends ChangeNotifier {
 
   Future<bool> createOrder(Order order) async {
     try {
+      print('DEBUG: Creating order with ID: ${order.id}');
+      print('DEBUG: Customer ID: ${order.customerId}');
+      print('DEBUG: Order data: ${order.toJson()}');
+
       final newOrder = await _orderRepository.createOrder(order);
       _orders.insert(0, newOrder);
+      _error = null;
       notifyListeners();
+      print('DEBUG: Order created successfully with new ID: ${newOrder.id}');
       return true;
     } catch (e) {
-      _error = 'Failed to create order';
+      print('DEBUG: Order creation error: $e');
+      _error = 'Failed to create order: ${e.toString()}';
       notifyListeners();
       return false;
     }

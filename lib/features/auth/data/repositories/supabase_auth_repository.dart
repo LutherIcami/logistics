@@ -77,11 +77,17 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<Either<Failure, String>> inviteDriver({
     required String email,
     required String fullName,
+    String? downloadLink,
   }) async {
     try {
       final response = await client.functions.invoke(
         'welcome-driver',
-        body: {'email': email, 'name': fullName, 'role': 'driver'},
+        body: {
+          'email': email,
+          'name': fullName,
+          'role': 'driver',
+          'download_link': downloadLink,
+        },
       );
 
       final data = response.data as Map<String, dynamic>;

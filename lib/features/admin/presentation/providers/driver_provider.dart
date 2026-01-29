@@ -23,11 +23,13 @@ class DriverProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get statusFilter => _statusFilter;
 
-  List<Driver> get filteredDrivers {
+  List<Driver> get filteredDrivers => getMappedDrivers(_statusFilter);
+
+  List<Driver> getMappedDrivers(String status) {
     return _drivers.where((driver) {
-      final matchesStatus = _statusFilter == 'all'
+      final matchesStatus = status.toLowerCase() == 'all'
           ? true
-          : driver.status.toLowerCase() == _statusFilter;
+          : driver.status.toLowerCase() == status.toLowerCase();
       final matchesSearch = _searchQuery.isEmpty
           ? true
           : driver.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||

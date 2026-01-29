@@ -87,14 +87,7 @@ class ShipmentDetailAdminPage extends StatelessWidget {
                       subtitle: const Text('Tap to assign a driver'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
-                        // TODO: Navigate to assign driver page or show dialog
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Assign driver flow not implemented yet',
-                            ),
-                          ),
-                        );
+                        context.go('/admin/shipments/${shipment.id}/assign');
                       },
                     ),
                   ),

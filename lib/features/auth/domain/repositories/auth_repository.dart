@@ -18,6 +18,7 @@ abstract class AuthRepository {
   Future<Either<Failure, String>> inviteDriver({
     required String email,
     required String fullName,
+    String? downloadLink,
   });
 
   Future<Either<Failure, void>> logout();

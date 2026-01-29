@@ -13,36 +13,84 @@ class DriversPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BaseModulePage(
       title: 'Drivers Management',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.go('/admin/drivers/add'),
+        backgroundColor: const Color(0xFF1E293B),
+        icon: const Icon(Icons.person_add_rounded, color: Colors.white),
+        label: const Text('Add Driver', style: TextStyle(color: Colors.white)),
+      ),
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with Add Driver button
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Driver Roster',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                FilledButton.icon(
-                  onPressed: () => context.go('/admin/drivers/add'),
-                  icon: const Icon(Icons.person_add, size: 18),
-                  label: const Text('Add Driver'),
-                ),
-              ],
+            // Search and Controls
+            const Text(
+              'Driver Operations',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
             ),
-            const SizedBox(height: 24),
-
-            // Search and filter bar
-            _buildSearchAndFilter(),
             const SizedBox(height: 16),
+            _buildSearchAndFilter(),
+            const SizedBox(height: 32),
+
+            // Performance Section
+            const Text(
+              'Staff Insights',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  _PerformanceCard(
+                    title: 'On-Time Performance',
+                    value: '94.2%',
+                    trend: '+2.5%',
+                    icon: Icons.timer_rounded,
+                    color: Colors.green,
+                  ),
+                  SizedBox(width: 16),
+                  _PerformanceCard(
+                    title: 'System Safety Score',
+                    value: '4.85 / 5',
+                    trend: '+0.3%',
+                    icon: Icons.verified_user_rounded,
+                    color: Colors.blue,
+                  ),
+                  SizedBox(width: 16),
+                  _PerformanceCard(
+                    title: 'Avg. Fuel Economy',
+                    value: '18.4 mpg',
+                    trend: '-1.2%',
+                    icon: Icons.local_gas_station_rounded,
+                    color: Colors.orange,
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
 
             // Driver status tabs
+            const Text(
+              'Active Roster',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0F172A),
+              ),
+            ),
+            const SizedBox(height: 8),
             DefaultTabController(
               length: 4,
               child: Column(
@@ -51,20 +99,20 @@ class DriversPage extends StatelessWidget {
                   TabBar(
                     isScrollable: true,
                     tabAlignment: TabAlignment.start,
-                    labelColor: Theme.of(context).colorScheme.primary,
-                    unselectedLabelColor:
-                        Theme.of(context).colorScheme.onSurfaceVariant,
-                    indicatorColor: Theme.of(context).colorScheme.primary,
+                    labelColor: const Color(0xFF1E293B),
+                    unselectedLabelColor: Colors.grey[500],
+                    indicatorColor: const Color(0xFF1E293B),
+                    indicatorSize: TabBarIndicatorSize.label,
                     tabs: const [
-                      Tab(text: 'All'),
+                      Tab(text: 'All Staff'),
                       Tab(text: 'Active'),
                       Tab(text: 'On Leave'),
                       Tab(text: 'Inactive'),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.5,
+                    height: 500, // Fixed height for tab content
                     child: TabBarView(
                       children: [
                         _buildDriverList(context, 'all'),
@@ -77,40 +125,7 @@ class DriversPage extends StatelessWidget {
                 ],
               ),
             ),
-
-            // Quick Stats
-            const SizedBox(height: 24),
-            Text(
-              'Driver Performance',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                _PerformanceCard(
-                  title: 'On Time Delivery',
-                  value: '92%',
-                  trend: 2.5,
-                  color: Colors.green,
-                ),
-                SizedBox(width: 16),
-                _PerformanceCard(
-                  title: 'Safety Score',
-                  value: '4.8/5',
-                  trend: 0.3,
-                  color: Colors.blue,
-                ),
-                SizedBox(width: 16),
-                _PerformanceCard(
-                  title: 'Fuel Efficiency',
-                  value: '7.8 L/100km',
-                  trend: -1.2,
-                  color: Colors.orange,
-                ),
-              ],
-            ),
+            const SizedBox(height: 60),
           ],
         ),
       ),
@@ -120,37 +135,35 @@ class DriversPage extends StatelessWidget {
   Widget _buildSearchAndFilter() {
     return Consumer<DriverProvider>(
       builder: (context, provider, _) {
-        return Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search drivers...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                ),
-                onChanged: provider.setSearchQuery,
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TextField(
+            onChanged: provider.setSearchQuery,
+            decoration: InputDecoration(
+              hintText: 'Search by name or ID...',
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+              prefixIcon: const Icon(Icons.search_rounded, color: Colors.blue),
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.tune_rounded, color: Colors.grey),
+                onPressed: () {},
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 15,
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Advanced filters coming soon'),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.filter_list),
-              style: IconButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                padding: const EdgeInsets.all(12),
-              ),
-            ),
-          ],
+          ),
         );
       },
     );
@@ -159,86 +172,99 @@ class DriversPage extends StatelessWidget {
   Widget _buildDriverList(BuildContext context, String statusFilter) {
     return Consumer<DriverProvider>(
       builder: (context, provider, _) {
-        provider.setStatusFilter(statusFilter);
+        final drivers = provider.getMappedDrivers(statusFilter);
         if (provider.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
-        final drivers = provider.filteredDrivers;
         if (drivers.isEmpty) {
-          return const Center(child: Text('No drivers found'));
+          return Center(
+            child: Text(
+              'No staff records found in this category.',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+          );
         }
-        return ListView.separated(
+        return ListView.builder(
+          physics:
+              const NeverScrollableScrollPhysics(), // Handled by parent scroll
           itemCount: drivers.length,
-          separatorBuilder: (context, index) => const Divider(height: 1),
           itemBuilder: (context, index) {
-            final driver = drivers[index];
-            return _DriverListTile(driver: driver);
+            return _DriverListItem(driver: drivers[index]);
           },
         );
       },
     );
   }
-
 }
 
-class _DriverListTile extends StatelessWidget {
-  const _DriverListTile({required this.driver});
-
+class _DriverListItem extends StatelessWidget {
   final Driver driver;
+  const _DriverListItem({required this.driver});
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        vertical: 8,
-        horizontal: 0,
-      ),
-      leading: CircleAvatar(
-        radius: 24,
-        child: Text(
-          driver.name.isNotEmpty ? driver.name[0] : '?',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      title: Text(
-        driver.name,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
-      subtitle: Text(
-        'ID: ${driver.id}',
-        style: TextStyle(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-          fontSize: 12,
-        ),
-      ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getStatusColor(driver.statusDisplayText.toLowerCase())
-                  .withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              driver.statusDisplayText,
-              style: TextStyle(
-                color:
-                    _getStatusColor(driver.statusDisplayText.toLowerCase()),
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.more_vert, size: 20),
-            onPressed: () => _showActionsMenu(context, driver),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      onTap: () => context.go('/admin/drivers/${driver.id}'),
+      child: ListTile(
+        onTap: () => context.go('/admin/drivers/${driver.id}'),
+        contentPadding: const EdgeInsets.all(12),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blue[400]!, Colors.blue[600]!],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Center(
+            child: Text(
+              driver.name.substring(0, 1).toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          driver.name,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+        ),
+        subtitle: Text(
+          driver.email,
+          style: TextStyle(color: Colors.grey[500], fontSize: 11),
+        ),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: _getStatusColor(driver.status).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            driver.status.toUpperCase(),
+            style: TextStyle(
+              color: _getStatusColor(driver.status),
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -246,160 +272,94 @@ class _DriverListTile extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'active':
         return Colors.green;
-      case 'on leave':
+      case 'on_leave':
         return Colors.orange;
       case 'inactive':
-        return Colors.grey;
+        return Colors.red;
       default:
-        return Colors.blue;
+        return Colors.grey;
     }
-  }
-
-  Future<void> _showActionsMenu(BuildContext context, Driver driver) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text('View Details'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.go('/admin/drivers/${driver.id}');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Edit Driver'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                  context.go('/admin/drivers/${driver.id}/edit');
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Colors.red),
-                title: const Text(
-                  'Delete Driver',
-                  style: TextStyle(color: Colors.red),
-                ),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  final provider = context.read<DriverProvider>();
-                  final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) {
-                          return AlertDialog(
-                            title: const Text('Delete Driver'),
-                            content: Text(
-                              'Are you sure you want to delete ${driver.name}?',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.of(context).pop(false),
-                                child: const Text('Cancel'),
-                              ),
-                              FilledButton(
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                                onPressed: () =>
-                                    Navigator.of(context).pop(true),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          );
-                        },
-                      ) ??
-                      false;
-
-                  if (!confirmed) return;
-
-                  await provider.deleteDriver(driver.id);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Driver ${driver.name} deleted'),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
 class _PerformanceCard extends StatelessWidget {
   final String title;
   final String value;
-  final double trend;
+  final String trend;
+  final IconData icon;
   final Color color;
 
   const _PerformanceCard({
     required this.title,
     required this.value,
     required this.trend,
+    required this.icon,
     required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
                 ),
+                child: Icon(icon, color: color, size: 18),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  trend,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: trend.startsWith('+') ? Colors.green : Colors.red,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    trend >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                    color: trend >= 0 ? Colors.green : Colors.red,
-                    size: 16,
-                  ),
-                  Text(
-                    '${trend.abs()}%',
-                    style: TextStyle(
-                      color: trend >= 0 ? Colors.green : Colors.red,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: trend / 10 + 0.5, // Just for demo
-                backgroundColor: color.withValues(alpha: 0.1),
-                color: color,
-                minHeight: 4,
-                borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 20),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1E293B),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

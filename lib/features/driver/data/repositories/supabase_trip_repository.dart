@@ -73,4 +73,18 @@ class SupabaseTripRepository implements TripRepository {
       throw Exception('Failed to update trip: $e');
     }
   }
+
+  @override
+  Future<Trip> createTrip(Trip trip) async {
+    try {
+      final response = await client
+          .from('trips')
+          .insert(trip.toJson())
+          .select()
+          .single();
+      return Trip.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to create trip: $e');
+    }
+  }
 }

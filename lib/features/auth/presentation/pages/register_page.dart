@@ -18,7 +18,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String _selectedRole = 'customer';
+  final String _selectedRole = 'customer';
 
   @override
   void dispose() {

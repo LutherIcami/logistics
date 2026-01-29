@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../domain/models/driver_model.dart';
 import '../../providers/driver_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
 import '../base_module_page.dart';
 
@@ -180,6 +181,7 @@ class _DriverFormPageState extends State<DriverFormPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final driverProvider = context.read<DriverProvider>();
+    final settingsProvider = context.read<SettingsProvider>();
     final authProvider = context.read<AuthProvider>();
     final now = DateTime.now();
 
@@ -208,9 +210,11 @@ class _DriverFormPageState extends State<DriverFormPage> {
         context.pop();
       } else {
         // 1. Professional Onboarding: Call Edge Function to Invite
+        final downloadLink = settingsProvider.systemSettings.driverDownloadLink;
         final userId = await authProvider.inviteDriver(
           email: _emailController.text.trim(),
           fullName: _nameController.text.trim(),
+          downloadLink: downloadLink,
         );
 
         if (userId == null) {

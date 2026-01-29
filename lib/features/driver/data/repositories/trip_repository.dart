@@ -7,6 +7,7 @@ abstract class TripRepository {
   Future<Trip?> getTripById(String id);
   Future<Trip> updateTripStatus(String tripId, String status);
   Future<Trip> updateTrip(Trip trip);
+  Future<Trip> createTrip(Trip trip);
 }
 
 /// Simple in-memory mock implementation for local/testing use.
@@ -94,9 +95,7 @@ class MockTripRepository implements TripRepository {
   @override
   Future<List<Trip>> getTripsByDriverId(String driverId) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    return _trips
-        .where((trip) => trip.driverId == driverId)
-        .toList()
+    return _trips.where((trip) => trip.driverId == driverId).toList()
       ..sort((a, b) => b.assignedDate.compareTo(a.assignedDate));
   }
 
@@ -105,8 +104,8 @@ class MockTripRepository implements TripRepository {
     await Future<void>.delayed(const Duration(milliseconds: 200));
     try {
       return _trips.firstWhere((trip) => trip.id == id);
-    } catch (_) {
-      return null;
+    } catch (e) {
+      throw Exception('Failed to update trip: $e');
     }
   }
 
@@ -121,7 +120,8 @@ class MockTripRepository implements TripRepository {
         pickupDate: status == 'in_transit' && _trips[index].pickupDate == null
             ? now
             : _trips[index].pickupDate,
-        deliveryDate: status == 'delivered' && _trips[index].deliveryDate == null
+        deliveryDate:
+            status == 'delivered' && _trips[index].deliveryDate == null
             ? now
             : _trips[index].deliveryDate,
       );
@@ -140,6 +140,13 @@ class MockTripRepository implements TripRepository {
     } else {
       _trips.add(trip);
     }
+    return trip;
+  }
+
+  @override
+  Future<Trip> createTrip(Trip trip) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    _trips.add(trip);
     return trip;
   }
 }

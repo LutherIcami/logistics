@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../customer/domain/models/order_model.dart';
 import '../../../customer/data/repositories/order_repository.dart';
+import '../../../driver/data/repositories/trip_repository.dart';
+import '../../../driver/domain/models/trip_model.dart';
 import '../../../../app/di/injection_container.dart' as di;
 
 class ShipmentProvider extends ChangeNotifier {
@@ -21,11 +23,14 @@ class ShipmentProvider extends ChangeNotifier {
       _shipments.where((s) => s.isInTransit || s.isAssigned).length;
   int get completedCount => _shipments.where((s) => s.isDelivered).length;
 
-  ShipmentProvider() : _repository = di.sl<OrderRepository>() {
+  ShipmentProvider()
+    : _repository = di.sl<OrderRepository>(),
+      _tripRepository = di.sl<TripRepository>() {
     loadShipments();
   }
 
   final OrderRepository _repository;
+  final TripRepository _tripRepository;
 
   Future<void> loadShipments() async {
     _isLoading = true;
@@ -112,6 +117,61 @@ class ShipmentProvider extends ChangeNotifier {
       }
     } catch (e) {
       _error = 'Failed to update shipment';
+      notifyListeners();
+    }
+  }
+
+  Future<bool> assignDriver({
+    required String shipmentId,
+    required String driverId,
+    required String driverName,
+    required String vehiclePlate,
+  }) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final shipment = getShipmentById(shipmentId);
+      if (shipment == null) throw Exception('Shipment not found');
+
+      final updatedShipment = shipment.copyWith(
+        driverId: driverId,
+        driverName: driverName,
+        vehiclePlate: vehiclePlate,
+        status: 'assigned',
+      );
+
+      // 1. Update the order
+      await updateShipment(updatedShipment);
+
+      // 2. Create a trip for the driver
+      final newTrip = Trip(
+        id: 'TRP-${DateTime.now().millisecondsSinceEpoch}',
+        driverId: driverId,
+        driverName: driverName,
+        pickupLocation: shipment.pickupLocation,
+        deliveryLocation: shipment.deliveryLocation,
+        customerName: shipment.customerName,
+        status: 'assigned',
+        assignedDate: DateTime.now(),
+        vehiclePlate: vehiclePlate,
+        cargoType: shipment.cargoType,
+        cargoWeight: shipment.cargoWeight,
+        specialInstructions: shipment.specialInstructions,
+        distance: shipment.distance,
+        estimatedEarnings:
+            shipment.totalCost, // Or calculate based on some logic
+      );
+
+      await _tripRepository.createTrip(newTrip);
+
+      _error = null;
+      return true;
+    } catch (e) {
+      _error = 'Failed to assign driver: ${e.toString()}';
+      return false;
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }

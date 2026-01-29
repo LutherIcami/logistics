@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/settings_provider.dart';
-import '../../../../auth/presentation/providers/auth_provider.dart';
+import '../base_module_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -12,245 +11,330 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  final List<String> _languages = ['English', 'Swahili', 'French', 'Spanish'];
+  final _downloadLinkController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final settings = context.read<SettingsProvider>().systemSettings;
+      _downloadLinkController.text = settings.driverDownloadLink;
+    });
+  }
+
+  @override
+  void dispose() {
+    _downloadLinkController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveSystemSettings() async {
+    final provider = context.read<SettingsProvider>();
+    final newSettings = provider.systemSettings.copyWith(
+      driverDownloadLink: _downloadLinkController.text.trim(),
+    );
+
+    final success = await provider.updateSystemSettings(newSettings);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'System configuration synchronized'
+                : 'Failed to update system settings',
+          ),
+          backgroundColor: success ? Colors.green[600] : Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final settingsProvider = context.watch<SettingsProvider>();
-    final authProvider = context.watch<AuthProvider>();
-    final isAdmin = authProvider.user?.role == 'admin';
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('System Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
-        ),
+    return BaseModulePage(
+      title: 'Console Core',
+      child: Consumer<SettingsProvider>(
+        builder: (context, provider, _) {
+          return ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              _buildSectionTitle('Platform Configuration'),
+              const SizedBox(height: 16),
+              _buildSettingsCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Driver Application Distribution',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Define the binary repository for onboarded flight staff.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    ),
+                    const SizedBox(height: 20),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: TextField(
+                        controller: _downloadLinkController,
+                        decoration: const InputDecoration(
+                          hintText: 'https://cdn.logistics.com/driver-v1.apk',
+                          hintStyle: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF94A3B8),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.link_rounded,
+                            size: 20,
+                            color: Colors.blue,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: provider.isLoading
+                            ? null
+                            : _saveSystemSettings,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF1E293B),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.cloud_upload_rounded, size: 18),
+                        label: const Text('Update Repository Link'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildSectionTitle('Interface Preferences'),
+              const SizedBox(height: 16),
+              _buildSettingsCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _buildSwitchTile(
+                      title: 'Global Notifications',
+                      subtitle: 'Push alerts for critical fleet events',
+                      value: provider.notificationsEnabled,
+                      icon: Icons.notifications_active_rounded,
+                      color: Colors.orange,
+                      onChanged: provider.setNotificationsEnabled,
+                    ),
+                    Divider(height: 1, color: Colors.grey[100], indent: 60),
+                    _buildSwitchTile(
+                      title: 'High Contrast Mode',
+                      subtitle: 'Optimize for low-light environments',
+                      value: provider.darkMode,
+                      icon: Icons.dark_mode_rounded,
+                      color: Colors.indigo,
+                      onChanged: provider.setDarkMode,
+                    ),
+                    Divider(height: 1, color: Colors.grey[100], indent: 60),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
+                      leading: _buildIconFrame(
+                        Icons.language_rounded,
+                        Colors.teal,
+                      ),
+                      title: const Text(
+                        'System Language',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: Text(
+                        provider.language,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: Color(0xFFE2E8F0),
+                      ),
+                      onTap: () => _showLanguageDialog(provider),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
+              _buildSectionTitle('System Information'),
+              const SizedBox(height: 16),
+              _buildSettingsCard(
+                padding: EdgeInsets.zero,
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  leading: _buildIconFrame(Icons.verified_rounded, Colors.blue),
+                  title: const Text(
+                    'About Logistics Pro',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    'Version 1.2.4 (Stable Build)',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                  trailing: const Icon(
+                    Icons.info_outline_rounded,
+                    size: 20,
+                    color: Color(0xFF94A3B8),
+                  ),
+                  onTap: () => _showAboutDialog(context),
+                ),
+              ),
+              const SizedBox(height: 60),
+            ],
+          );
+        },
       ),
-      body: ListView(
-        children: [
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'General Preferences',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          SwitchListTile(
-            title: const Text('Enable Notifications'),
-            value: settingsProvider.notificationsEnabled,
-            onChanged: (bool value) {
-              settingsProvider.setNotificationsEnabled(value);
-            },
-          ),
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            value: settingsProvider.darkMode,
-            onChanged: (bool value) {
-              settingsProvider.setDarkMode(value);
-            },
-          ),
-          ListTile(
-            title: const Text('Language'),
-            subtitle: Text(settingsProvider.language),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => _showLanguageDialog(settingsProvider),
-          ),
+    );
+  }
 
-          if (isAdmin) ...[
-            const Divider(),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'System Configuration',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.payments),
-              title: const Text('Base Order Rate'),
-              subtitle: Text(
-                'KES ${settingsProvider.systemSettings.baseOrderRate}',
-              ),
-              trailing: const Icon(Icons.edit, size: 20),
-              onTap: () => _editSystemSetting(
-                'Base Order Rate',
-                settingsProvider.systemSettings.baseOrderRate.toString(),
-                (val) => settingsProvider.updateSystemSettings(
-                  settingsProvider.systemSettings.copyWith(
-                    baseOrderRate: double.tryParse(val),
-                  ),
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.straighten),
-              title: const Text('Distance Rate (per km)'),
-              subtitle: Text(
-                'KES ${settingsProvider.systemSettings.distanceRate}',
-              ),
-              trailing: const Icon(Icons.edit, size: 20),
-              onTap: () => _editSystemSetting(
-                'Distance Rate',
-                settingsProvider.systemSettings.distanceRate.toString(),
-                (val) => settingsProvider.updateSystemSettings(
-                  settingsProvider.systemSettings.copyWith(
-                    distanceRate: double.tryParse(val),
-                  ),
-                ),
-              ),
-            ),
-            SwitchListTile(
-              title: const Text('Enable Public Registration'),
-              subtitle: const Text('Allow new users to sign up'),
-              value: settingsProvider.systemSettings.enableRegistration,
-              onChanged: (bool value) {
-                settingsProvider.updateSystemSettings(
-                  settingsProvider.systemSettings.copyWith(
-                    enableRegistration: value,
-                  ),
-                );
-              },
-            ),
-          ],
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        color: Color(0xFF64748B),
+        letterSpacing: 1.2,
+      ),
+    );
+  }
 
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'Account Security',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+  Widget _buildSettingsCard({
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.all(24),
+  }) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Profile Settings'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Profile settings coming soon')),
-              );
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.lock),
-            title: const Text('Change Password'),
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Password reset link sent to email'),
-                ),
-              );
-            },
-          ),
-
-          const Divider(),
-          const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              'About',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ListTile(
-            leading: const Icon(Icons.info),
-            title: const Text('About App'),
-            onTap: () {
-              showAboutDialog(
-                context: context,
-                applicationName: 'Logistics Pro',
-                applicationVersion: '1.0.0',
-                applicationIcon: const Icon(Icons.local_shipping, size: 48),
-                children: [const Text('Complete Logistics Management System.')],
-              );
-            },
-          ),
-          const SizedBox(height: 32),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: ElevatedButton(
-              onPressed: () {
-                context.read<AuthProvider>().logout();
-                context.go('/login');
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child: const Text('Logout'),
-            ),
-          ),
-          const SizedBox(height: 48),
         ],
       ),
+      child: child,
+    );
+  }
+
+  Widget _buildIconFrame(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 20),
+    );
+  }
+
+  Widget _buildSwitchTile({
+    required String title,
+    required String subtitle,
+    required bool value,
+    required IconData icon,
+    required Color color,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      title: Text(
+        title,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+      ),
+      secondary: _buildIconFrame(icon, color),
+      activeColor: const Color(0xFF1E293B),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Logistics Pro',
+      applicationVersion: '1.2.4',
+      applicationIcon: _buildIconFrame(
+        Icons.local_shipping_rounded,
+        Colors.blue,
+      ),
+      applicationLegalese:
+          'Copyright © 2024 Logos Logistics. All rights reserved.',
     );
   }
 
   void _showLanguageDialog(SettingsProvider provider) {
+    final languages = ['English', 'Swahili', 'French', 'Spanish'];
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Select Language'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: _languages.length,
-              itemBuilder: (context, index) {
-                final language = _languages[index];
-                return RadioListTile<String>(
-                  title: Text(language),
-                  value: language,
-                  groupValue: provider.language,
-                  onChanged: (String? value) {
-                    if (value != null) {
-                      provider.setLanguage(value);
-                      Navigator.pop(context);
-                    }
-                  },
-                );
-              },
-            ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
           ),
-        );
-      },
-    );
-  }
-
-  void _editSystemSetting(
-    String title,
-    String currentValue,
-    Function(String) onSave,
-  ) {
-    final controller = TextEditingController(text: currentValue);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Edit $title'),
-          content: TextField(
-            controller: controller,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(
-              labelText: title,
-              border: const OutlineInputBorder(),
-            ),
+          title: const Text(
+            'Display Language',
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                onSave(controller.text);
-                Navigator.pop(context);
-              },
-              child: const Text('SAVE'),
-            ),
-          ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: languages
+                .map(
+                  (lang) => RadioListTile<String>(
+                    title: Text(lang, style: const TextStyle(fontSize: 15)),
+                    value: lang,
+                    groupValue: provider.language,
+                    activeColor: Colors.blue,
+                    onChanged: (String? value) {
+                      if (value != null) {
+                        provider.setLanguage(value);
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
+                )
+                .toList(),
+          ),
         );
       },
     );

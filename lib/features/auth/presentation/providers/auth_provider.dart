@@ -100,6 +100,7 @@ class AuthProvider extends ChangeNotifier {
   Future<String?> inviteDriver({
     required String email,
     required String fullName,
+    String? downloadLink,
   }) async {
     _isLoading = true;
     _error = null;
@@ -108,6 +109,7 @@ class AuthProvider extends ChangeNotifier {
     final result = await _authRepository.inviteDriver(
       email: email,
       fullName: fullName,
+      downloadLink: downloadLink,
     );
 
     return result.fold(

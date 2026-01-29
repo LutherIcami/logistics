@@ -5,20 +5,25 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
 
 Deno.serve(async (req) => {
-    const { email, name, role } = await req.json()
+    const { email, name, role, download_link } = await req.json()
 
     try {
         const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+        const finalDownloadLink = download_link || "https://your-app-link.com/download";
 
-        // 1. Invite the user via Supabase Auth
-        // This generates the magic link/invite internally
-        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-            data: { full_name: name, role: role },
-            // Redirect to your app's deep link or reset password page
-            redirectTo: 'io.supabase.projo://reset-password',
+        // 1. Generate the invite link (this does NOT send an email)
+        const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.generateLink({
+            type: 'invite',
+            email: email,
+            options: {
+                data: { full_name: name, role: role },
+                redirectTo: 'io.supabase.projo://reset-password',
+            }
         })
 
         if (inviteError) throw inviteError
+
+        const action_link = inviteData.properties.action_link;
 
         // 2. Send the custom beautiful email via Resend
         const res = await fetch('https://api.resend.com/emails', {
@@ -40,13 +45,13 @@ Deno.serve(async (req) => {
             <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #cbd5e1;">
               <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">Step 1: Download the App</h2>
               <p style="font-size: 14px; color: #64748b; margin-bottom: 20px;">Install the official driver app to receive assignments and track trips.</p>
-              <a href="YOUR_APK_DOWNLOAD_LINK_HERE" style="background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Download Android App (APK)</a>
+              <a href="${finalDownloadLink}" style="background: #0f172a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Download Android App (APK)</a>
             </div>
 
             <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #bae6fd;">
               <h2 style="font-size: 18px; color: #0369a1; margin-top: 0;">Step 2: Secure Your Account</h2>
               <p style="font-size: 14px; color: #0c4a6e; margin-bottom: 20px;">Once the app is installed, click the button below to set your password and log in.</p>
-              <a href="${inviteData.user.action_link}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Secure My Account</a>
+              <a href="${action_link}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Secure My Account</a>
             </div>
 
             <hr style="margin: 32px 0; border: 0; border-top: 1px solid #e2e8f0;" />

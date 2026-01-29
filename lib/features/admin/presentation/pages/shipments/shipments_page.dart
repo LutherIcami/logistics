@@ -4,30 +4,27 @@ import 'package:provider/provider.dart';
 import '../../providers/shipment_provider.dart';
 import '../../../../customer/domain/models/order_model.dart';
 
+import '../base_module_page.dart';
+
 class ShipmentsPage extends StatelessWidget {
   const ShipmentsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Shipments'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/admin'),
+    return BaseModulePage(
+      title: 'Order Tracking',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.go('/admin/shipments/add'),
+        backgroundColor: const Color(0xFF1E293B),
+        icon: const Icon(Icons.add_box_rounded, color: Colors.white),
+        label: const Text(
+          'Create Shipment',
+          style: TextStyle(color: Colors.white),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search),
-            onPressed: () {
-              // TODO: Implement search bar in app bar or similar
-              // For now simpler search is in the body
-            },
-          ),
-        ],
       ),
-      body: Column(
+      child: Column(
         children: [
+          _buildTopBanner(context),
           _buildFilterBar(context),
           Expanded(
             child: Consumer<ShipmentProvider>(
@@ -41,18 +38,22 @@ class ShipmentsPage extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.local_shipping_outlined,
-                          size: 64,
-                          color: Colors.grey[400],
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                            size: 64,
+                            color: Colors.grey[300],
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No shipments found',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 16,
-                          ),
+                          'No active shipments matched.',
+                          style: TextStyle(color: Colors.grey[600]),
                         ),
                       ],
                     ),
@@ -60,11 +61,12 @@ class ShipmentsPage extends StatelessWidget {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(24),
                   itemCount: provider.shipments.length,
                   itemBuilder: (context, index) {
-                    final shipment = provider.shipments[index];
-                    return _ShipmentCard(shipment: shipment);
+                    return _ShipmentListItem(
+                      shipment: provider.shipments[index],
+                    );
                   },
                 );
               },
@@ -72,177 +74,263 @@ class ShipmentsPage extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/admin/shipments/add'),
-        child: const Icon(Icons.add),
+    );
+  }
+
+  Widget _buildTopBanner(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Global Logistics',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            'Monitor and manage all current transport operations.',
+            style: TextStyle(fontSize: 13, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildFilterBar(BuildContext context) {
+    final filters = [
+      'All',
+      'Pending',
+      'Assigned',
+      'In Transit',
+      'Delivered',
+      'Cancelled',
+    ];
     return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: ListView(
+      color: Colors.white,
+      height: 70,
+      child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          _FilterChip(label: 'All'),
-          const SizedBox(width: 8),
-          _FilterChip(label: 'Pending'),
-          const SizedBox(width: 8),
-          _FilterChip(label: 'Assigned'),
-          const SizedBox(width: 8),
-          _FilterChip(label: 'In Transit'),
-          const SizedBox(width: 8),
-          _FilterChip(label: 'Delivered'),
-          const SizedBox(width: 8),
-          _FilterChip(label: 'Cancelled'),
-        ],
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount: filters.length,
+        itemBuilder: (context, index) {
+          final label = filters[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: _CustomFilterChip(label: label),
+          );
+        },
       ),
     );
   }
 }
 
-class _FilterChip extends StatelessWidget {
+class _CustomFilterChip extends StatelessWidget {
   final String label;
-
-  const _FilterChip({required this.label});
+  const _CustomFilterChip({required this.label});
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ShipmentProvider>();
     final isSelected = provider.currentFilter == label;
 
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
-          provider.setFilter(label);
-        }
-      },
-      backgroundColor: Colors.white,
-      selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-      labelStyle: TextStyle(
-        color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: isSelected
-              ? Theme.of(context).primaryColor
-              : Colors.grey.shade300,
+    return InkWell(
+      onTap: () => provider.setFilter(label),
+      borderRadius: BorderRadius.circular(15),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : const Color(0xFF64748B),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ),
       ),
-      showCheckmark: false,
     );
   }
 }
 
-class _ShipmentCard extends StatelessWidget {
+class _ShipmentListItem extends StatelessWidget {
   final Order shipment;
-
-  const _ShipmentCard({required this.shipment});
+  const _ShipmentListItem({required this.shipment});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: InkWell(
         onTap: () => context.go('/admin/shipments/${shipment.id}'),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    '#${shipment.id.substring(shipment.id.length - 6)}', // Short ID
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ID: #${shipment.id.substring(shipment.id.length - 6).toUpperCase()}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        shipment.customerName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Color(0xFF1E293B),
+                        ),
+                      ),
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: shipment.statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: shipment.statusColor.withValues(alpha: 0.3),
-                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      shipment.statusDisplayText,
+                      shipment.status.toUpperCase(),
                       style: TextStyle(
-                        fontSize: 12,
                         color: shipment.statusColor,
+                        fontSize: 10,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 16, color: Colors.grey),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      shipment.customerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w500),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.trip_origin_rounded,
+                      color: Colors.blue,
+                      size: 16,
                     ),
-                  ),
-                  if (shipment.trackingNumber != null) ...[
-                    const SizedBox(width: 8),
-                    const Icon(Icons.qr_code, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      shipment.trackingNumber!,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    Expanded(child: DashedLine()),
+                    Icon(
+                      Icons.location_on_rounded,
+                      color: Colors.red,
+                      size: 16,
                     ),
                   ],
-                ],
+                ),
               ),
-              const SizedBox(height: 12),
               Row(
                 children: [
-                  _LocationInfo(
-                    label: 'From',
-                    value: shipment.pickupLocation,
-                    color: Colors.blue,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'PICKUP',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          shipment.pickupLocation,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  _LocationInfo(
-                    label: 'To',
-                    value: shipment.deliveryLocation,
-                    color: Colors.green,
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DELIVERY',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          shipment.deliveryLocation,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-              if (shipment.driverName != null) ...[
-                const Divider(height: 24),
-                Row(
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
                   children: [
                     const Icon(
-                      Icons.directions_car,
+                      Icons.person_pin,
                       size: 16,
-                      color: Colors.grey,
+                      color: Color(0xFF64748B),
                     ),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 8),
                     Text(
-                      'Driver: ${shipment.driverName}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      shipment.driverName ?? 'Unassigned',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF334155),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const Spacer(),
                     Text(
@@ -251,7 +339,7 @@ class _ShipmentCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -264,45 +352,33 @@ class _ShipmentCard extends StatelessWidget {
   }
 }
 
-class _LocationInfo extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _LocationInfo({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+class DashedLine extends StatelessWidget {
+  const DashedLine({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                label,
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
+    return Container(
+      height: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final boxWidth = constraints.constrainWidth();
+          const dashWidth = 4.0;
+          final dashCount = (boxWidth / (2 * dashWidth)).floor();
+          return Flex(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            direction: Axis.horizontal,
+            children: List.generate(dashCount, (_) {
+              return const SizedBox(
+                width: dashWidth,
+                height: 1,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: Colors.grey),
+                ),
+              );
+            }),
+          );
+        },
       ),
     );
   }

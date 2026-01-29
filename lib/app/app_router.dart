@@ -15,6 +15,7 @@ import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_f
 import '../features/admin/presentation/pages/shipments/shipments_page.dart';
 import '../features/admin/presentation/pages/shipments/shipment_detail_page.dart';
 import '../features/admin/presentation/pages/shipments/shipment_form_page.dart';
+import '../features/admin/presentation/pages/shipments/assign_driver_page.dart';
 import '../features/admin/presentation/pages/customers/customers_page.dart';
 import '../features/admin/presentation/pages/customers/customer_detail_page.dart';
 import '../features/admin/presentation/pages/customers/customer_form_page.dart';
@@ -115,6 +116,11 @@ final GoRouter appRouter = GoRouter(
               path: ':id/edit',
               builder: (context, state) =>
                   ShipmentFormPage(shipmentId: state.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: ':id/assign',
+              builder: (context, state) =>
+                  AssignDriverPage(shipmentId: state.pathParameters['id']!),
             ),
           ],
         ),

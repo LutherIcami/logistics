@@ -6,7 +6,8 @@ class Order {
   final String customerName;
   final String pickupLocation;
   final String deliveryLocation;
-  final String status; // 'pending', 'confirmed', 'assigned', 'in_transit', 'delivered', 'cancelled'
+  final String
+  status; // 'pending', 'confirmed', 'assigned', 'in_transit', 'delivered', 'cancelled'
   final DateTime orderDate;
   final DateTime? pickupDate;
   final DateTime? deliveryDate;
@@ -46,7 +47,7 @@ class Order {
   });
 
   Map<String, dynamic> toJson() {
-    return {
+    final Map<String, dynamic> data = {
       'id': id,
       'customerId': customerId,
       'customerName': customerName,
@@ -66,8 +67,13 @@ class Order {
       'distance': distance,
       'totalCost': totalCost,
       'trackingNumber': trackingNumber,
-      'additionalInfo': additionalInfo,
     };
+
+    if (additionalInfo != null) {
+      data['additionalInfo'] = additionalInfo;
+    }
+
+    return data;
   }
 
   factory Order.fromJson(Map<String, dynamic> json) {
