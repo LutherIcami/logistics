@@ -24,10 +24,12 @@ class SupabaseDriverRepository implements DriverRepository {
           .from('drivers')
           .select()
           .eq('id', id)
-          .single();
+          .maybeSingle();
+
+      if (response == null) return null;
       return Driver.fromJson(response);
     } catch (e) {
-      return null;
+      throw Exception('Database error while fetching driver profile: $e');
     }
   }
 

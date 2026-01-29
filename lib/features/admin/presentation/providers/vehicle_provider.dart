@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../../admin/domain/models/vehicle_model.dart';
 import '../../../admin/data/repositories/vehicle_repository.dart';
@@ -39,13 +40,16 @@ class VehicleProvider extends ChangeNotifier {
   List<Vehicle> get vehiclesWithExpiredLicense =>
       _vehicles.where((v) => v.licenseExpired).toList();
 
-  double get totalFleetValue =>
-      _vehicles.fold(0.0, (sum, vehicle) => sum + (vehicle.currentValue ?? 0.0));
+  double get totalFleetValue => _vehicles.fold(
+    0.0,
+    (sum, vehicle) => sum + (vehicle.currentValue ?? 0.0),
+  );
 
   double get averageFuelEfficiency {
     final vehiclesWithFuel = _vehicles.where((v) => v.fuelCapacity > 0);
     if (vehiclesWithFuel.isEmpty) return 0.0;
-    return vehiclesWithFuel.fold(0.0, (sum, v) => sum + v.fuelLevelPercentage) / vehiclesWithFuel.length;
+    return vehiclesWithFuel.fold(0.0, (sum, v) => sum + v.fuelLevelPercentage) /
+        vehiclesWithFuel.length;
   }
 
   Future<void> loadInitialVehicles() async {
@@ -112,7 +116,11 @@ class VehicleProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateVehicleMaintenance(String vehicleId, DateTime lastMaintenance, DateTime nextMaintenance) async {
+  Future<bool> updateVehicleMaintenance(
+    String vehicleId,
+    DateTime lastMaintenance,
+    DateTime nextMaintenance,
+  ) async {
     try {
       final vehicle = await getVehicleById(vehicleId);
       if (vehicle != null) {
@@ -135,6 +143,19 @@ class VehicleProvider extends ChangeNotifier {
     try {
       return await _repository.getVehiclesNeedingMaintenance();
     } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<String>> uploadVehicleImages(
+    String vehicleId,
+    List<File> images,
+  ) async {
+    try {
+      return await _repository.uploadVehicleImages(vehicleId, images);
+    } catch (e) {
+      _error = 'Failed to upload images';
+      notifyListeners();
       return [];
     }
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/widgets/profile_completion_banner.dart';
 
 class BaseModulePage extends StatelessWidget {
   final String title;
@@ -49,7 +50,12 @@ class BaseModulePage extends StatelessWidget {
         ],
       ),
       floatingActionButton: floatingActionButton,
-      body: child,
+      body: Column(
+        children: [
+          const ProfileCompletionBanner(),
+          Expanded(child: child),
+        ],
+      ),
     );
   }
 }

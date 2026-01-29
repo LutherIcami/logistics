@@ -23,6 +23,7 @@ class Vehicle {
   final String? licenseExpiry;
   final double? purchasePrice;
   final double? currentValue;
+  final List<String> images;
   final Map<String, dynamic>? specifications;
   final Map<String, dynamic>? additionalInfo;
 
@@ -48,6 +49,7 @@ class Vehicle {
     this.licenseExpiry,
     this.purchasePrice,
     this.currentValue,
+    this.images = const [],
     this.specifications,
     this.additionalInfo,
   });
@@ -61,22 +63,25 @@ class Vehicle {
       'year': year,
       'type': type,
       'status': status,
-      'assignedDriverId': assignedDriverId,
-      'assignedDriverName': assignedDriverName,
+      if (assignedDriverId != null) 'assignedDriverId': assignedDriverId,
+      if (assignedDriverName != null) 'assignedDriverName': assignedDriverName,
       'fuelCapacity': fuelCapacity,
       'currentFuelLevel': currentFuelLevel,
       'mileage': mileage,
       'purchaseDate': purchaseDate.toIso8601String(),
-      'lastMaintenanceDate': lastMaintenanceDate?.toIso8601String(),
-      'nextMaintenanceDate': nextMaintenanceDate?.toIso8601String(),
-      'currentLocation': currentLocation,
-      'loadCapacity': loadCapacity,
-      'insuranceExpiry': insuranceExpiry,
-      'licenseExpiry': licenseExpiry,
-      'purchasePrice': purchasePrice,
-      'currentValue': currentValue,
-      'specifications': specifications,
-      'additionalInfo': additionalInfo,
+      if (lastMaintenanceDate != null)
+        'lastMaintenanceDate': lastMaintenanceDate!.toIso8601String(),
+      if (nextMaintenanceDate != null)
+        'nextMaintenanceDate': nextMaintenanceDate!.toIso8601String(),
+      if (currentLocation != null) 'currentLocation': currentLocation,
+      if (loadCapacity != null) 'loadCapacity': loadCapacity,
+      if (insuranceExpiry != null) 'insuranceExpiry': insuranceExpiry,
+      if (licenseExpiry != null) 'licenseExpiry': licenseExpiry,
+      if (purchasePrice != null) 'purchasePrice': purchasePrice,
+      if (currentValue != null) 'currentValue': currentValue,
+      'images': images,
+      if (specifications != null) 'specifications': specifications,
+      if (additionalInfo != null) 'additionalInfo': additionalInfo,
     };
   }
 
@@ -107,6 +112,7 @@ class Vehicle {
       licenseExpiry: json['licenseExpiry'],
       purchasePrice: json['purchasePrice']?.toDouble(),
       currentValue: json['currentValue']?.toDouble(),
+      images: json['images'] != null ? List<String>.from(json['images']) : [],
       specifications: json['specifications'],
       additionalInfo: json['additionalInfo'],
     );
@@ -134,6 +140,7 @@ class Vehicle {
     String? licenseExpiry,
     double? purchasePrice,
     double? currentValue,
+    List<String>? images,
     Map<String, dynamic>? specifications,
     Map<String, dynamic>? additionalInfo,
   }) {
@@ -159,6 +166,7 @@ class Vehicle {
       licenseExpiry: licenseExpiry ?? this.licenseExpiry,
       purchasePrice: purchasePrice ?? this.purchasePrice,
       currentValue: currentValue ?? this.currentValue,
+      images: images ?? this.images,
       specifications: specifications ?? this.specifications,
       additionalInfo: additionalInfo ?? this.additionalInfo,
     );
@@ -215,11 +223,28 @@ class Vehicle {
     }
   }
 
-  double get fuelLevelPercentage => fuelCapacity > 0 ? (currentFuelLevel / fuelCapacity) * 100 : 0;
+  double get fuelLevelPercentage =>
+      fuelCapacity > 0 ? (currentFuelLevel / fuelCapacity) * 100 : 0;
 
   bool get needsMaintenance {
     if (nextMaintenanceDate == null) return false;
+    // Alert if maintenance is due within 7 days or already past
+    final thresholdDate = DateTime.now().add(const Duration(days: 7));
+    return nextMaintenanceDate!.isBefore(thresholdDate);
+  }
+
+  bool get isMaintenanceOverdue {
+    if (nextMaintenanceDate == null) return false;
     return DateTime.now().isAfter(nextMaintenanceDate!);
+  }
+
+  String get maintenanceUrgency {
+    if (nextMaintenanceDate == null) return 'none';
+    final diff = nextMaintenanceDate!.difference(DateTime.now()).inDays;
+    if (diff < 0) return 'critical';
+    if (diff <= 3) return 'high';
+    if (diff <= 7) return 'moderate';
+    return 'none';
   }
 
   bool get insuranceExpired {

@@ -49,24 +49,26 @@ class Trip {
     return {
       'id': id,
       'driverId': driverId,
-      'driverName': driverName,
+      if (driverName != null) 'driverName': driverName,
       'pickupLocation': pickupLocation,
       'deliveryLocation': deliveryLocation,
       'customerName': customerName,
-      'customerPhone': customerPhone,
+      if (customerPhone != null) 'customerPhone': customerPhone,
       'status': status,
       'assignedDate': assignedDate.toIso8601String(),
-      'pickupDate': pickupDate?.toIso8601String(),
-      'deliveryDate': deliveryDate?.toIso8601String(),
-      'estimatedDelivery': estimatedDelivery?.toIso8601String(),
-      'vehicleId': vehicleId,
-      'vehiclePlate': vehiclePlate,
+      if (pickupDate != null) 'pickupDate': pickupDate!.toIso8601String(),
+      if (deliveryDate != null) 'deliveryDate': deliveryDate!.toIso8601String(),
+      if (estimatedDelivery != null)
+        'estimatedDelivery': estimatedDelivery!.toIso8601String(),
+      if (vehicleId != null) 'vehicleId': vehicleId,
+      if (vehiclePlate != null) 'vehiclePlate': vehiclePlate,
       'cargoType': cargoType,
-      'cargoWeight': cargoWeight,
-      'specialInstructions': specialInstructions,
-      'distance': distance,
-      'estimatedEarnings': estimatedEarnings,
-      'additionalInfo': additionalInfo,
+      if (cargoWeight != null) 'cargoWeight': cargoWeight,
+      if (specialInstructions != null)
+        'specialInstructions': specialInstructions,
+      if (distance != null) 'distance': distance,
+      if (estimatedEarnings != null) 'estimatedEarnings': estimatedEarnings,
+      if (additionalInfo != null) 'additionalInfo': additionalInfo,
     };
   }
 

@@ -19,6 +19,7 @@ abstract class AuthRepository {
     required String email,
     required String fullName,
     String? downloadLink,
+    String? password,
   });
 
   Future<Either<Failure, void>> logout();

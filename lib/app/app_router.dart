@@ -9,6 +9,7 @@ import '../features/admin/presentation/pages/drivers/drivers_page.dart';
 import '../features/admin/presentation/pages/drivers/driver_detail_page.dart';
 import '../features/admin/presentation/pages/drivers/driver_form_page.dart';
 import '../features/admin/presentation/pages/fleet_management/fleet_dashboard_page.dart';
+import '../features/admin/presentation/pages/fleet_management/fleet_maintenance_page.dart';
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicles_list_page.dart';
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_detail_page.dart';
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_form_page.dart';
@@ -80,6 +81,10 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: 'vehicles',
               builder: (context, state) => const VehiclesListPage(),
+            ),
+            GoRoute(
+              path: 'maintenance',
+              builder: (context, state) => const FleetMaintenancePage(),
             ),
             GoRoute(
               path: 'vehicles/add',

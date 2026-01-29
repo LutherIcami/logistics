@@ -38,16 +38,16 @@ class Driver {
       'name': name,
       'email': email,
       'phone': phone,
-      'licenseNumber': licenseNumber,
-      'licenseExpiry': licenseExpiry,
+      if (licenseNumber != null) 'licenseNumber': licenseNumber,
+      if (licenseExpiry != null) 'licenseExpiry': licenseExpiry,
       'status': status,
       'rating': rating,
       'totalTrips': totalTrips,
-      'currentLocation': currentLocation,
-      'currentVehicle': currentVehicle,
+      if (currentLocation != null) 'currentLocation': currentLocation,
+      if (currentVehicle != null) 'currentVehicle': currentVehicle,
       'joinDate': joinDate.toIso8601String(),
-      'profileImage': profileImage,
-      'additionalInfo': additionalInfo,
+      if (profileImage != null) 'profileImage': profileImage,
+      if (additionalInfo != null) 'additionalInfo': additionalInfo,
     };
   }
 

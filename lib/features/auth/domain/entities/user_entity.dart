@@ -15,6 +15,8 @@ class UserEntity extends Equatable {
     this.avatarUrl,
   });
 
+  bool get isProfileComplete => fullName.isNotEmpty && avatarUrl != null;
+
   @override
   List<Object?> get props => [id, email, fullName, role, avatarUrl];
 }

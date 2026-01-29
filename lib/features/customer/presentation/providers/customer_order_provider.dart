@@ -44,6 +44,14 @@ class CustomerOrderProvider extends ChangeNotifier {
       .where((o) => o.isDelivered)
       .fold(0.0, (sum, order) => sum + order.totalCost);
 
+  int get unreadNotificationCount {
+    int count = 0;
+    // For customers, we can count pending orders that need attention
+    // or status changes that haven't been "seen" (simplified for now)
+    count += pendingOrders.length;
+    return count;
+  }
+
   Future<void> initializeCustomer(String customerId) async {
     _currentCustomerId = customerId;
     _setLoading(true);

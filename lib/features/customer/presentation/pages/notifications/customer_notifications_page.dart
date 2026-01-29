@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/driver_trip_provider.dart';
+import '../../providers/customer_order_provider.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
-import '../../../domain/models/trip_model.dart';
+import '../../../domain/models/order_model.dart';
 
-class NotificationsPage extends StatelessWidget {
-  const NotificationsPage({super.key});
+class CustomerNotificationsPage extends StatelessWidget {
+  const CustomerNotificationsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<DriverTripProvider, AuthProvider>(
+    return Consumer2<CustomerOrderProvider, AuthProvider>(
       builder: (context, provider, authProvider, _) {
         final notifications = _generateNotifications(provider, authProvider);
 
@@ -37,7 +37,7 @@ class NotificationsPage extends StatelessWidget {
   }
 
   List<_NotificationData> _generateNotifications(
-    DriverTripProvider provider,
+    CustomerOrderProvider provider,
     AuthProvider authProvider,
   ) {
     final List<_NotificationData> list = [];
@@ -58,68 +58,47 @@ class NotificationsPage extends StatelessWidget {
       );
     }
 
-    // Add Vehicle Maintenance Alert if applicable
-    final vehicle = provider.assignedVehicle;
-    if (vehicle != null && vehicle.needsMaintenance) {
-      final isOverdue = vehicle.isMaintenanceOverdue;
-      list.add(
-        _NotificationData(
-          id: 'maint-${vehicle.id}',
-          title: isOverdue
-              ? 'CRITICAL: Maintenance Overdue'
-              : 'Maintenance Required',
-          message: isOverdue
-              ? 'Your vehicle ${vehicle.registrationNumber} is overdue for maintenance! Please contact the workshop immediately.'
-              : 'Scheduled maintenance for ${vehicle.registrationNumber} is due soon (${vehicle.nextMaintenanceDate?.day}/${vehicle.nextMaintenanceDate?.month}).',
-          time: DateTime.now(),
-          type: NotificationType.maintenance,
-          isRead: false,
-        ),
-      );
-    }
-
-    // Sort all trips by date to get the "latest" events
-    final allTrips = List<Trip>.from(provider.trips)
+    // Sort all orders by date to get the late events
+    final allOrders = List<Order>.from(provider.orders)
       ..sort((a, b) {
-        final dateA = a.deliveryDate ?? a.pickupDate ?? a.assignedDate;
-        final dateB = b.deliveryDate ?? b.pickupDate ?? b.assignedDate;
-        return dateB.compareTo(dateA);
+        final dateA = b.orderDate;
+        final dateB = a.orderDate;
+        return dateA.compareTo(dateB);
       });
 
-    for (final trip in allTrips) {
-      if (trip.isDelivered) {
+    for (final order in allOrders) {
+      if (order.isDelivered) {
         list.add(
           _NotificationData(
-            id: 'del-${trip.id}',
-            title: 'Mission Complete',
+            id: 'del-${order.id}',
+            title: 'Order Delivered',
             message:
-                'Delivery to ${trip.deliveryLocation} confirmed. KES ${trip.estimatedEarnings?.toStringAsFixed(0) ?? '0'} added to balance.',
-            time: trip.deliveryDate ?? DateTime.now(),
-            type: NotificationType.payment,
+                'Your order to ${order.deliveryLocation} has been successfully delivered.',
+            time: order.deliveryDate ?? DateTime.now(),
+            type: NotificationType.delivery,
             isRead: true,
           ),
         );
-      } else if (trip.isAssigned) {
+      } else if (order.isPending) {
         list.add(
           _NotificationData(
-            id: 'asg-${trip.id}',
-            title: 'New Mission Deployed',
-            message:
-                'Pickup at ${trip.pickupLocation} for ${trip.customerName}.',
-            time: trip.assignedDate,
-            type: NotificationType.tripAssigned,
+            id: 'pnd-${order.id}',
+            title: 'Order Placed',
+            message: 'Your order for ${order.cargoType} is being processed.',
+            time: order.orderDate,
+            type: NotificationType.orderInfo,
             isRead: false,
           ),
         );
-      } else if (trip.isInTransit) {
+      } else if (order.isInTransit) {
         list.add(
           _NotificationData(
-            id: 'trn-${trip.id}',
-            title: 'Operation In Progress',
-            message: 'Vehicle currently en route to ${trip.deliveryLocation}.',
-            time: trip.pickupDate ?? DateTime.now(),
-            type: NotificationType.tripAssigned,
-            isRead: true,
+            id: 'trn-${order.id}',
+            title: 'Order In Transit',
+            message: 'Your cargo is on the way to ${order.deliveryLocation}.',
+            time: DateTime.now(), // Approximate
+            type: NotificationType.tracking,
+            isRead: false,
           ),
         );
       }
@@ -144,7 +123,6 @@ class NotificationsPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
-              // Mark all as read
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('All notifications marked as read'),
@@ -172,7 +150,7 @@ class NotificationsPage extends StatelessWidget {
   }
 }
 
-enum NotificationType { tripAssigned, payment, rating, maintenance, summary }
+enum NotificationType { orderInfo, tracking, delivery, summary }
 
 class _NotificationData {
   final String id;
@@ -201,7 +179,7 @@ class _NotificationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: notification.isRead ? 1 : 3,
-      color: notification.isRead ? null : Colors.orange.withValues(alpha: 0.05),
+      color: notification.isRead ? null : Colors.green.withValues(alpha: 0.05),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
         leading: Container(
@@ -233,7 +211,7 @@ class _NotificationCard extends StatelessWidget {
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Colors.orange,
+                  color: Colors.green,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -261,14 +239,12 @@ class _NotificationCard extends StatelessWidget {
 
   IconData _getTypeIcon(NotificationType type) {
     switch (type) {
-      case NotificationType.tripAssigned:
-        return Icons.local_shipping;
-      case NotificationType.payment:
-        return Icons.attach_money;
-      case NotificationType.rating:
-        return Icons.star;
-      case NotificationType.maintenance:
-        return Icons.build;
+      case NotificationType.orderInfo:
+        return Icons.shopping_bag;
+      case NotificationType.tracking:
+        return Icons.location_on;
+      case NotificationType.delivery:
+        return Icons.check_circle;
       case NotificationType.summary:
         return Icons.summarize;
     }
@@ -276,14 +252,12 @@ class _NotificationCard extends StatelessWidget {
 
   Color _getTypeColor(NotificationType type) {
     switch (type) {
-      case NotificationType.tripAssigned:
+      case NotificationType.orderInfo:
         return Colors.blue;
-      case NotificationType.payment:
+      case NotificationType.tracking:
+        return Colors.orange;
+      case NotificationType.delivery:
         return Colors.green;
-      case NotificationType.rating:
-        return Colors.amber;
-      case NotificationType.maintenance:
-        return Colors.red;
       case NotificationType.summary:
         return Colors.purple;
     }

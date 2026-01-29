@@ -70,26 +70,8 @@ class _EarningsPageState extends State<EarningsPage> {
   }
 
   Widget _buildTotalEarningsCard(DriverTripProvider provider) {
-    // Mock earnings based on period
-    double earnings;
-    int trips;
-    switch (_selectedPeriod) {
-      case 'Today':
-        earnings = 3500;
-        trips = 2;
-        break;
-      case 'This Week':
-        earnings = 18500;
-        trips = 8;
-        break;
-      case 'This Month':
-        earnings = 72000;
-        trips = 32;
-        break;
-      default:
-        earnings = provider.totalEarnings;
-        trips = provider.totalTrips;
-    }
+    final earnings = provider.getEarningsForPeriod(_selectedPeriod);
+    final trips = provider.getTripCountForPeriod(_selectedPeriod);
 
     return Container(
       width: double.infinity,
@@ -100,7 +82,7 @@ class _EarningsPageState extends State<EarningsPage> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.orange.withValues(alpha: 0.3),
@@ -111,9 +93,14 @@ class _EarningsPageState extends State<EarningsPage> {
       ),
       child: Column(
         children: [
-          const Text(
-            'Total Earnings',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+          Text(
+            '$_selectedPeriod Earnings',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -122,6 +109,7 @@ class _EarningsPageState extends State<EarningsPage> {
               color: Colors.white,
               fontSize: 36,
               fontWeight: FontWeight.bold,
+              letterSpacing: -1,
             ),
           ),
           const SizedBox(height: 16),
@@ -132,8 +120,12 @@ class _EarningsPageState extends State<EarningsPage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              '$trips trips completed',
-              style: const TextStyle(color: Colors.white),
+              '$trips missions completed',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -142,14 +134,19 @@ class _EarningsPageState extends State<EarningsPage> {
   }
 
   Widget _buildEarningsBreakdown(DriverTripProvider provider) {
+    if (provider.recentEarnings.isEmpty) return const SizedBox.shrink();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Earnings Breakdown',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        const Text(
+          'SUMMARY STATISTICS',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF64748B),
+            letterSpacing: 1.5,
+          ),
         ),
         const SizedBox(height: 16),
         Card(
@@ -158,31 +155,26 @@ class _EarningsPageState extends State<EarningsPage> {
             child: Column(
               children: [
                 _EarningsRow(
-                  label: 'Trip Earnings',
-                  amount: 15000,
-                  icon: Icons.local_shipping,
+                  label: 'Gross Revenue',
+                  amount: provider.getEarningsForPeriod(_selectedPeriod),
+                  icon: Icons.payments_rounded,
                   color: Colors.blue,
                 ),
                 const Divider(),
                 _EarningsRow(
-                  label: 'Bonuses',
-                  amount: 2500,
-                  icon: Icons.card_giftcard,
+                  label: 'Active Pipelines',
+                  amount: provider.activeTrips.toDouble(),
+                  icon: Icons.pending_actions_rounded,
+                  color: Colors.orange,
+                  isMoney: false,
+                ),
+                const Divider(),
+                _EarningsRow(
+                  label: 'Total Completed',
+                  amount: provider.completedTrips.length.toDouble(),
+                  icon: Icons.task_alt_rounded,
                   color: Colors.green,
-                ),
-                const Divider(),
-                _EarningsRow(
-                  label: 'Tips',
-                  amount: 1000,
-                  icon: Icons.favorite,
-                  color: Colors.pink,
-                ),
-                const Divider(),
-                _EarningsRow(
-                  label: 'Deductions',
-                  amount: -500,
-                  icon: Icons.remove_circle,
-                  color: Colors.red,
+                  isMoney: false,
                 ),
               ],
             ),
@@ -193,42 +185,68 @@ class _EarningsPageState extends State<EarningsPage> {
   }
 
   Widget _buildRecentPayments(DriverTripProvider provider) {
+    final recent = provider.recentEarnings;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Recent Payments',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'PAYMENT HISTORY',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF64748B),
+                letterSpacing: 1.5,
+              ),
+            ),
+            Text(
+              '${recent.length} RECORDS',
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
         ),
         const SizedBox(height: 16),
-        Card(
-          child: Column(
-            children: [
-              _PaymentTile(
-                date: DateTime.now().subtract(const Duration(days: 1)),
-                amount: 8500,
-                status: 'Completed',
-                tripCount: 4,
+        if (recent.isEmpty)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(40),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.receipt_long_rounded,
+                    size: 48,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No transaction history found',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
               ),
-              const Divider(height: 1),
-              _PaymentTile(
-                date: DateTime.now().subtract(const Duration(days: 8)),
-                amount: 12000,
-                status: 'Completed',
-                tripCount: 6,
-              ),
-              const Divider(height: 1),
-              _PaymentTile(
-                date: DateTime.now().subtract(const Duration(days: 15)),
-                amount: 15500,
-                status: 'Completed',
-                tripCount: 8,
-              ),
-            ],
+            ),
+          )
+        else
+          Card(
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: recent.length > 5 ? 5 : recent.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final trip = recent[index];
+                return _PaymentTile(
+                  date: trip.deliveryDate ?? trip.assignedDate,
+                  amount: trip.estimatedEarnings ?? 0.0,
+                  status: 'Delivered',
+                  location: trip.deliveryLocation,
+                );
+              },
+            ),
           ),
-        ),
       ],
     );
   }
@@ -239,17 +257,18 @@ class _EarningsRow extends StatelessWidget {
   final double amount;
   final IconData icon;
   final Color color;
+  final bool isMoney;
 
   const _EarningsRow({
     required this.label,
     required this.amount,
     required this.icon,
     required this.color,
+    this.isMoney = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isNegative = amount < 0;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -263,12 +282,17 @@ class _EarningsRow extends StatelessWidget {
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(label)),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
           Text(
-            '${isNegative ? '-' : '+'}KES ${amount.abs().toStringAsFixed(0)}',
+            isMoney ? 'KES ${amount.toStringAsFixed(0)}' : '${amount.toInt()}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isNegative ? Colors.red : Colors.green,
+              color: amount < 0 ? Colors.red : Colors.green[700],
             ),
           ),
         ],
@@ -281,39 +305,43 @@ class _PaymentTile extends StatelessWidget {
   final DateTime date;
   final double amount;
   final String status;
-  final int tripCount;
+  final String location;
 
   const _PaymentTile({
     required this.date,
     required this.amount,
     required this.status,
-    required this.tripCount,
+    required this.location,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.green.withValues(alpha: 0.1),
-        child: const Icon(Icons.check_circle, color: Colors.green),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.1),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.check_circle_rounded,
+          color: Colors.green,
+          size: 20,
+        ),
       ),
       title: Text(
         'KES ${amount.toStringAsFixed(0)}',
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
       ),
       subtitle: Text(
-        '$tripCount trips • ${date.day}/${date.month}/${date.year}',
+        '$location • ${date.day}/${date.month}/${date.year}',
+        style: TextStyle(color: Colors.grey[500], fontSize: 12),
       ),
-      trailing: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.green.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          status,
-          style: const TextStyle(color: Colors.green, fontSize: 12),
-        ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: Colors.grey,
+        size: 16,
       ),
     );
   }

@@ -11,6 +11,6 @@ entrypoint = "./functions/resend/index.ts"
 # static_files = [ "./functions/resend/*.html" ]
 [functions.welcome-driver]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/import_map.json"
 entrypoint = "./functions/welcome-driver/index.ts"

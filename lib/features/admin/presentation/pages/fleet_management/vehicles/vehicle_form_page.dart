@@ -39,6 +39,7 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
   String _status = 'active';
   bool _isLoading = false;
   List<File> _vehicleImages = [];
+  List<String> _existingImageUrls = []; // Track existing URLs
 
   @override
   void initState() {
@@ -68,6 +69,7 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
         _currentValueController.text = vehicle.currentValue?.toString() ?? '';
         _insuranceExpiryController.text = vehicle.insuranceExpiry ?? '';
         _licenseExpiryController.text = vehicle.licenseExpiry ?? '';
+        _existingImageUrls = vehicle.images;
       });
     }
   }
@@ -99,70 +101,99 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
 
     final provider = context.read<VehicleProvider>();
 
-    // TODO: Upload _vehicleImages to server and get URLs
-    // For now, we'll just save the vehicle data
+    try {
+      // 1. Upload new images if any
+      List<String> uploadedUrls = [];
+      if (_vehicleImages.isNotEmpty) {
+        // Use a temporary ID for new vehicles if needed, or generated one
+        final tempId = widget.isEdit
+            ? widget.vehicleId!
+            : 'VEH-${DateTime.now().millisecondsSinceEpoch}';
 
-    final vehicle = Vehicle(
-      id: widget.isEdit
-          ? widget.vehicleId!
-          : 'VEH-${DateTime.now().millisecondsSinceEpoch}',
-      registrationNumber: _registrationController.text.trim(),
-      make: _makeController.text.trim(),
-      model: _modelController.text.trim(),
-      year: int.parse(_yearController.text),
-      type: _type,
-      status: _status,
-      fuelCapacity: double.parse(_fuelCapacityController.text),
-      currentFuelLevel: double.tryParse(_currentFuelController.text) ?? 0.0,
-      mileage: double.tryParse(_mileageController.text) ?? 0.0,
-      purchaseDate: widget.isEdit
-          ? (await provider.getVehicleById(widget.vehicleId!))?.purchaseDate ??
-                DateTime.now()
-          : DateTime.now(),
-      currentLocation: _locationController.text.isEmpty
-          ? null
-          : _locationController.text.trim(),
-      loadCapacity: _loadCapacityController.text.isEmpty
-          ? null
-          : double.parse(_loadCapacityController.text),
-      purchasePrice: _purchasePriceController.text.isEmpty
-          ? null
-          : double.parse(_purchasePriceController.text),
-      currentValue: _currentValueController.text.isEmpty
-          ? null
-          : double.parse(_currentValueController.text),
-      insuranceExpiry: _insuranceExpiryController.text.isEmpty
-          ? null
-          : _insuranceExpiryController.text.trim(),
-      licenseExpiry: _licenseExpiryController.text.isEmpty
-          ? null
-          : _licenseExpiryController.text.trim(),
-    );
+        uploadedUrls = await provider.uploadVehicleImages(
+          tempId,
+          _vehicleImages,
+        );
+      }
 
-    final success = widget.isEdit
-        ? await provider.updateVehicle(vehicle)
-        : await provider.addVehicle(vehicle);
+      // 2. Combine with existing URLs
+      final List<String> finalImageUrls = [
+        ..._existingImageUrls,
+        ...uploadedUrls,
+      ];
 
-    setState(() {
-      _isLoading = false;
-    });
+      final vehicle = Vehicle(
+        id: widget.isEdit
+            ? widget.vehicleId!
+            : 'VEH-${DateTime.now().millisecondsSinceEpoch}',
+        registrationNumber: _registrationController.text.trim(),
+        make: _makeController.text.trim(),
+        model: _modelController.text.trim(),
+        year: int.parse(_yearController.text),
+        type: _type,
+        status: _status,
+        fuelCapacity: double.parse(_fuelCapacityController.text),
+        currentFuelLevel: double.tryParse(_currentFuelController.text) ?? 0.0,
+        mileage: double.tryParse(_mileageController.text) ?? 0.0,
+        purchaseDate: widget.isEdit
+            ? (await provider.getVehicleById(
+                    widget.vehicleId!,
+                  ))?.purchaseDate ??
+                  DateTime.now()
+            : DateTime.now(),
+        currentLocation: _locationController.text.isEmpty
+            ? null
+            : _locationController.text.trim(),
+        loadCapacity: _loadCapacityController.text.isEmpty
+            ? null
+            : double.parse(_loadCapacityController.text),
+        purchasePrice: _purchasePriceController.text.isEmpty
+            ? null
+            : double.parse(_purchasePriceController.text),
+        currentValue: _currentValueController.text.isEmpty
+            ? null
+            : double.parse(_currentValueController.text),
+        insuranceExpiry: _insuranceExpiryController.text.isEmpty
+            ? null
+            : _insuranceExpiryController.text.trim(),
+        licenseExpiry: _licenseExpiryController.text.isEmpty
+            ? null
+            : _licenseExpiryController.text.trim(),
+        images: finalImageUrls,
+      );
 
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.isEdit
-                  ? 'Vehicle updated successfully'
-                  : 'Vehicle added successfully',
+      final success = widget.isEdit
+          ? await provider.updateVehicle(vehicle)
+          : await provider.addVehicle(vehicle);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.isEdit
+                    ? 'Vehicle updated successfully'
+                    : 'Vehicle added successfully',
+              ),
             ),
-          ),
-        );
-        context.go('/admin/fleet');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(provider.error ?? 'Failed to save vehicle')),
-        );
+          );
+          context.go('/admin/fleet');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(provider.error ?? 'Failed to save vehicle')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error saving vehicle: $e')));
       }
     }
   }
@@ -199,7 +230,7 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
                 vehiclePlate: _registrationController.text.isNotEmpty
                     ? _registrationController.text
                     : 'New Vehicle',
-                currentImageUrls: null, // TODO: Get from vehicle model
+                currentImageUrls: _existingImageUrls,
                 maxImages: 4,
                 onImagesSelected: (images) {
                   setState(() {

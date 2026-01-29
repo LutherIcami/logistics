@@ -60,6 +60,19 @@ class SupabaseAuthRepository implements AuthRepository {
         'role': role,
       });
 
+      // If registered as a driver, initialize the driver record
+      if (role == 'driver') {
+        await client.from('drivers').insert({
+          'id': response.user!.id,
+          'name': fullName,
+          'email': email,
+          'phone': '', // To be filled during onboarding
+          'status': 'active',
+          'rating': 5.0, // Start with a perfect rating
+          'joinDate': DateTime.now().toIso8601String(),
+        });
+      }
+
       return Right(
         UserEntity(
           id: response.user!.id,
@@ -78,6 +91,7 @@ class SupabaseAuthRepository implements AuthRepository {
     required String email,
     required String fullName,
     String? downloadLink,
+    String? password,
   }) async {
     try {
       final response = await client.functions.invoke(
@@ -87,6 +101,7 @@ class SupabaseAuthRepository implements AuthRepository {
           'name': fullName,
           'role': 'driver',
           'download_link': downloadLink,
+          'password': password,
         },
       );
 

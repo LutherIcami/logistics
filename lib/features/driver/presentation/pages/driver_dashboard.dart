@@ -19,16 +19,16 @@ class _DriverDashboardState extends State<DriverDashboard> {
   int _currentIndex = 0;
 
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = context.read<AuthProvider>();
-      if (authProvider.user != null) {
-        context.read<DriverTripProvider>().setCurrentDriver(
-          authProvider.user!.id,
-        );
-      }
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final authProvider = context.watch<AuthProvider>();
+    final tripProvider = context.read<DriverTripProvider>();
+
+    if (authProvider.user != null &&
+        tripProvider.currentDriver == null &&
+        !tripProvider.isLoading) {
+      tripProvider.setCurrentDriver(authProvider.user!.id);
+    }
   }
 
   @override
@@ -39,13 +39,25 @@ class _DriverDashboardState extends State<DriverDashboard> {
         backgroundColor: Colors.orangeAccent,
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: Badge(
-              smallSize: 8,
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            onPressed: () {
-              setState(() => _currentIndex = 4);
+          Consumer<DriverTripProvider>(
+            builder: (context, tripProvider, _) {
+              final authUser = context.watch<AuthProvider>().user;
+              int unreadCount = tripProvider.unreadNotificationCount;
+              if (authUser != null && !authUser.isProfileComplete) {
+                unreadCount++;
+              }
+
+              return IconButton(
+                icon: Badge(
+                  label: unreadCount > 0 ? Text('$unreadCount') : null,
+                  isLabelVisible: unreadCount > 0,
+                  backgroundColor: Colors.red,
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () {
+                  setState(() => _currentIndex = 4);
+                },
+              );
             },
           ),
           IconButton(
@@ -93,7 +105,9 @@ class _DriverDashboardState extends State<DriverDashboard> {
           }
 
           // Always show the body - it will handle null cases internally
-          return _buildBody(context, provider);
+          return Column(
+            children: [Expanded(child: _buildBody(context, provider))],
+          );
         },
       ),
       bottomNavigationBar: NavigationBar(
@@ -173,22 +187,70 @@ class _DriverDashboardState extends State<DriverDashboard> {
     DriverTripProvider provider,
   ) {
     final driver = provider.currentDriver;
+    final authProvider = context.read<AuthProvider>();
 
-    // If driver is null but we have trips, show a loading state
     if (driver == null) {
+      if (provider.isLoading) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      final authUser = context.watch<AuthProvider>().user;
+
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            const Text('Loading driver information...'),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => provider.setCurrentDriver('DRV-001'),
-              child: const Text('Load Driver Data'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.person_off_rounded,
+                size: 64,
+                color: Colors.grey,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Identity Not Found',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                provider.error ??
+                    'We couldn\'t find your driver records. This usually happens if your account was not fully provisioned.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              const SizedBox(height: 24),
+              if (authUser != null)
+                FilledButton.icon(
+                  onPressed: () {
+                    provider.initializeDriverProfile(
+                      authUser.fullName,
+                      authUser.email,
+                    );
+                  },
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Initialize Driver Profile'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  if (authProvider.user != null) {
+                    provider.setCurrentDriver(authProvider.user!.id);
+                  }
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry Authorization'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -200,7 +262,14 @@ class _DriverDashboardState extends State<DriverDashboard> {
         children: [
           // Welcome Card
           _buildWelcomeCard(driver),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+
+          // Maintenance Alert
+          if (provider.hasMaintenanceAlert) ...[
+            _buildMaintenanceBanner(provider),
+            const SizedBox(height: 24),
+          ] else
+            const SizedBox(height: 24),
 
           // Quick Stats
           Text(
@@ -356,6 +425,82 @@ class _DriverDashboardState extends State<DriverDashboard> {
     );
   }
 
+  Widget _buildMaintenanceBanner(DriverTripProvider provider) {
+    final vehicle = provider.assignedVehicle;
+    if (vehicle == null) return const SizedBox.shrink();
+
+    final urgency = vehicle.maintenanceUrgency;
+    final isCritical = urgency == 'critical' || urgency == 'high';
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isCritical ? Colors.red.shade50 : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isCritical ? Colors.red.shade200 : Colors.orange.shade200,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isCritical
+                ? Icons.error_outline_rounded
+                : Icons.warning_amber_rounded,
+            color: isCritical ? Colors.red : Colors.orange,
+            size: 28,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isCritical ? 'CRITICAL MAINTENANCE' : 'MAINTENANCE DUE',
+                  style: TextStyle(
+                    color: isCritical
+                        ? Colors.red.shade900
+                        : Colors.orange.shade900,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${vehicle.displayName} needs attention.',
+                  style: TextStyle(
+                    color: isCritical
+                        ? Colors.red.shade700
+                        : Colors.orange.shade700,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              // Navigation to maintenance details or contact
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Contact Dispatch for maintenance schedule'),
+                ),
+              );
+            },
+            child: Text(
+              'VIEW',
+              style: TextStyle(
+                color: isCritical ? Colors.red : Colors.orange,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatsGrid(DriverTripProvider provider, dynamic driver) {
     return Column(
       children: [
@@ -386,7 +531,8 @@ class _DriverDashboardState extends State<DriverDashboard> {
             Expanded(
               child: _StatCard(
                 title: 'This Week',
-                value: 'KES 18.5k',
+                value:
+                    'KES ${(provider.weekEarnings / 1000).toStringAsFixed(1)}k',
                 icon: Icons.attach_money,
                 color: Colors.orange,
               ),
@@ -395,7 +541,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
             Expanded(
               child: _StatCard(
                 title: 'Distance',
-                value: '1,250 km',
+                value: '${provider.totalDistance.toStringAsFixed(0)} km',
                 icon: Icons.straighten,
                 color: Colors.purple,
               ),

@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as path;
 import '../../domain/models/vehicle_model.dart';
 import 'vehicle_repository.dart';
 
@@ -85,14 +87,54 @@ class SupabaseVehicleRepository implements VehicleRepository {
   @override
   Future<List<Vehicle>> getVehiclesNeedingMaintenance() async {
     try {
-      final now = DateTime.now().toIso8601String();
+      final threshold = DateTime.now()
+          .add(const Duration(days: 7))
+          .toIso8601String();
       final response = await client
           .from('vehicles')
           .select()
-          .lt('nextMaintenanceDate', now);
+          .lt('nextMaintenanceDate', threshold);
       return (response as List).map((json) => Vehicle.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch vehicles needing maintenance: $e');
+    }
+  }
+
+  @override
+  Future<List<String>> uploadVehicleImages(
+    String vehicleId,
+    List<File> images,
+  ) async {
+    try {
+      final List<String> imageUrls = [];
+
+      for (var i = 0; i < images.length; i++) {
+        final file = images[i];
+        final fileExt = path.extension(file.path);
+        final fileName = '${DateTime.now().millisecondsSinceEpoch}_$i$fileExt';
+        final filePath = '$vehicleId/$fileName';
+
+        await client.storage
+            .from('vehicle-images')
+            .upload(
+              filePath,
+              file,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+              ),
+            );
+
+        final String imageUrl = client.storage
+            .from('vehicle-images')
+            .getPublicUrl(filePath);
+
+        imageUrls.add(imageUrl);
+      }
+
+      return imageUrls;
+    } catch (e) {
+      throw Exception('Failed to upload vehicle images: $e');
     }
   }
 }

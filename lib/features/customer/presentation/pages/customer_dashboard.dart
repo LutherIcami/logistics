@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/customer_order_provider.dart';
+import 'notifications/customer_notifications_page.dart';
 import '../../domain/models/customer_model.dart';
 import 'orders/orders_list_page.dart';
 import 'tracking/tracking_page.dart';
@@ -41,14 +42,24 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: Badge(
-              smallSize: 8,
-              child: const Icon(Icons.notifications_outlined),
-            ),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No new notifications')),
+          Consumer<CustomerOrderProvider>(
+            builder: (context, provider, _) {
+              final authUser = context.watch<AuthProvider>().user;
+              int unreadCount = provider.unreadNotificationCount;
+              if (authUser != null && !authUser.isProfileComplete) {
+                unreadCount++;
+              }
+
+              return IconButton(
+                icon: Badge(
+                  label: unreadCount > 0 ? Text('$unreadCount') : null,
+                  isLabelVisible: unreadCount > 0,
+                  backgroundColor: Colors.red,
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () {
+                  setState(() => _currentIndex = 5);
+                },
               );
             },
           ),
@@ -105,7 +116,9 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
             );
           }
 
-          return _buildBody(context, provider);
+          return Column(
+            children: [Expanded(child: _buildBody(context, provider))],
+          );
         },
       ),
       bottomNavigationBar: NavigationBar(
@@ -166,6 +179,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         return 'Invoices & Billing';
       case 4:
         return 'Support';
+      case 5:
+        return 'Notifications';
       default:
         return 'Dashboard';
     }
@@ -183,6 +198,8 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
         return const InvoicesPage();
       case 4:
         return const SupportPage();
+      case 5:
+        return const CustomerNotificationsPage();
       default:
         return _buildDashboardView(context, provider);
     }

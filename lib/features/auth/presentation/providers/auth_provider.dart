@@ -101,6 +101,7 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String fullName,
     String? downloadLink,
+    String? password,
   }) async {
     _isLoading = true;
     _error = null;
@@ -110,6 +111,7 @@ class AuthProvider extends ChangeNotifier {
       email: email,
       fullName: fullName,
       downloadLink: downloadLink,
+      password: password,
     );
 
     return result.fold(
