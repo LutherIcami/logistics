@@ -730,29 +730,19 @@ class _DriverDashboardState extends State<DriverDashboard> {
       children: [
         Expanded(
           child: _ActionCard(
-            title: 'Update Status',
-            icon: Icons.swap_horiz,
+            title: 'Fuel Report',
+            icon: Icons.local_gas_station_rounded,
             color: Colors.orange,
-            onTap: () => _showStatusDialog(context, provider),
+            onTap: () => context.push('/driver/fuel-report'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _ActionCard(
-            title: 'Navigation',
-            icon: Icons.navigation,
+            title: 'Service/Repair',
+            icon: Icons.build_rounded,
             color: Colors.blue,
-            onTap: () {
-              if (provider.inTransitTrips.isNotEmpty) {
-                context.push(
-                  '/driver/trips/${provider.inTransitTrips.first.id}',
-                );
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('No active trip to navigate')),
-                );
-              }
-            },
+            onTap: () => context.push('/driver/maintenance-report'),
           ),
         ),
         const SizedBox(width: 12),
@@ -779,91 +769,6 @@ class _DriverDashboardState extends State<DriverDashboard> {
           ),
         ),
       ],
-    );
-  }
-
-  void _showStatusDialog(BuildContext context, DriverTripProvider provider) {
-    final currentStatus = provider.currentDriver?.status ?? 'active';
-    String selectedStatus = currentStatus;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Change Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _StatusOption(
-                label: 'Active',
-                value: 'active',
-                groupValue: selectedStatus,
-                onChanged: (v) => setDialogState(() => selectedStatus = v!),
-              ),
-              _StatusOption(
-                label: 'On Leave',
-                value: 'on_leave',
-                groupValue: selectedStatus,
-                onChanged: (v) => setDialogState(() => selectedStatus = v!),
-              ),
-              _StatusOption(
-                label: 'Inactive',
-                value: 'inactive',
-                groupValue: selectedStatus,
-                onChanged: (v) => setDialogState(() => selectedStatus = v!),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                await provider.updateDriverStatus(selectedStatus);
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Status updated to $selectedStatus'),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Update'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusOption extends StatelessWidget {
-  final String label;
-  final String value;
-  final String groupValue;
-  final ValueChanged<String?> onChanged;
-
-  const _StatusOption({
-    required this.label,
-    required this.value,
-    required this.groupValue,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Radio<String>(
-        value: value,
-        groupValue: groupValue,
-        onChanged: onChanged,
-      ),
-      title: Text(label),
-      onTap: () => onChanged(value),
     );
   }
 }

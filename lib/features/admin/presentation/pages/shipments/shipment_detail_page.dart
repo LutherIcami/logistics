@@ -4,8 +4,6 @@ import 'package:provider/provider.dart';
 import '../../providers/shipment_provider.dart';
 import '../../../../customer/domain/models/order_model.dart';
 
-import '../../../../chat/presentation/pages/chat_page.dart';
-
 class ShipmentDetailAdminPage extends StatelessWidget {
   final String shipmentId;
 
@@ -33,18 +31,8 @@ class ShipmentDetailAdminPage extends StatelessWidget {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.chat),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ChatPage(
-                        trackingNumber: shipment.trackingNumber ?? shipment.id,
-                        currentUserRole: 'admin',
-                        currentUserName: 'Admin', // Admin user
-                      ),
-                    ),
-                  );
-                },
+                icon: const Icon(Icons.forum_rounded),
+                onPressed: () => context.push('/admin/chat/${shipment.id}'),
               ),
               IconButton(
                 icon: const Icon(Icons.edit),

@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/driver_trip_provider.dart';
 import '../../../domain/models/trip_model.dart';
-
-import '../../../../chat/presentation/pages/chat_page.dart';
 
 class TripDetailPage extends StatefulWidget {
   final String tripId;
@@ -36,28 +35,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
-            icon: const Icon(Icons.chat),
-            onPressed: () {
-              final provider = context.read<DriverTripProvider>();
-              try {
-                final trip = provider.trips.firstWhere(
-                  (t) => t.id == widget.tripId,
-                );
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ChatPage(
-                      trackingNumber: trip.trackingNumber ?? trip.id,
-                      currentUserRole: 'driver',
-                      currentUserName: trip.driverName,
-                    ),
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Trip data not available')),
-                );
-              }
-            },
+            icon: const Icon(Icons.forum_rounded),
+            onPressed: () => context.push('/driver/chat/${widget.tripId}'),
           ),
         ],
       ),
@@ -67,13 +46,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          Trip? trip;
-          try {
-            trip = provider.trips.firstWhere((t) => t.id == widget.tripId);
-          } catch (_) {
-            // If not found in loaded list, maybe show error or loading
-            return const Center(child: Text('Trip not found or loading...'));
-          }
+          final trip = provider.trips.firstWhere((t) => t.id == widget.tripId);
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -145,10 +118,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                           _InfoRow(
                             label: 'Phone',
                             value: trip.customerPhone!,
-                            icon: Icons.phone,
-                            onTap: () {
-                              // TODO: Make phone call
-                            },
+                            icon: Icons.phone_enabled_rounded,
+                            iconColor: Colors.green,
+                            onTap: () => _makePhoneCall(trip.customerPhone!),
                           ),
                       ],
                     ),
@@ -288,13 +260,17 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     child: Column(
                       children: [
                         _InfoRow(label: 'Type', value: trip.cargoType),
-                        if (trip.cargoWeight != null)
+                        if (trip.cargoWeight != null) ...[
+                          const Divider(),
                           _InfoRow(
                             label: 'Weight',
                             value: '${trip.cargoWeight!.toStringAsFixed(0)} kg',
                           ),
-                        if (trip.vehiclePlate != null)
+                        ],
+                        if (trip.vehiclePlate != null) ...[
+                          const Divider(),
                           _InfoRow(label: 'Vehicle', value: trip.vehiclePlate!),
+                        ],
                       ],
                     ),
                   ),
@@ -331,6 +307,107 @@ class _TripDetailPageState extends State<TripDetailPage> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 24),
+
+                // Financial Information
+                Text(
+                  'Financial Breakdown',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        _InfoRow(
+                          label: 'Total Trip Cost',
+                          value: NumberFormat.currency(
+                            symbol: 'KES ',
+                            decimalDigits: 0,
+                          ).format(trip.totalCost ?? 0),
+                          valueStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8.0),
+                          child: Divider(),
+                        ),
+                        _InfoRow(
+                          label: 'Driver Commission (70%)',
+                          value:
+                              NumberFormat.currency(
+                                symbol: 'KES ',
+                                decimalDigits: 0,
+                              ).format(
+                                trip.driverEarnings ??
+                                    trip.estimatedEarnings ??
+                                    0,
+                              ),
+                          icon: Icons.account_balance_wallet_rounded,
+                          iconColor: Colors.green,
+                          valueStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                        _InfoRow(
+                          label: 'Company Revenue (30%)',
+                          value: NumberFormat.currency(
+                            symbol: 'KES ',
+                            decimalDigits: 0,
+                          ).format(trip.companyRevenue ?? 0),
+                          icon: Icons.business_rounded,
+                          iconColor: Colors.blue,
+                          valueStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.calculate_outlined,
+                                size: 20,
+                                color: Colors.blue.shade700,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Cost calculated at KES 25/km + KES 2,000 base fee.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue.shade900,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 // Timeline
@@ -415,28 +492,55 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   Widget _buildBottomActions(BuildContext context, Trip trip) {
     if (trip.isAssigned) {
-      return FilledButton.icon(
-        onPressed: () => _startTrip(context, trip.id),
-        icon: const Icon(Icons.play_arrow),
-        label: const Text('Start Trip'),
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(double.infinity, 56),
-          backgroundColor: Colors.blue,
-        ),
+      return Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _openMap(trip.pickupLocation),
+              icon: const Icon(Icons.map),
+              label: const Text('Navigate'),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: FilledButton.icon(
+              onPressed: () => _startTrip(context, trip.id),
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start Trip'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 56),
+                backgroundColor: Colors.blue,
+              ),
+            ),
+          ),
+        ],
       );
     }
 
     if (trip.isInTransit) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
+      return Row(
         children: [
-          FilledButton.icon(
-            onPressed: () => _completeTrip(context, trip.id),
-            icon: const Icon(Icons.check_circle),
-            label: const Text('Mark as Delivered'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size(double.infinity, 56),
-              backgroundColor: Colors.green,
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _openMap(trip.deliveryLocation),
+              icon: const Icon(Icons.navigation),
+              label: const Text('Navigate'),
+              style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: FilledButton.icon(
+              onPressed: () => _completeTrip(context, trip.id),
+              icon: const Icon(Icons.check_circle),
+              label: const Text('Delivered'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size(0, 56),
+                backgroundColor: Colors.green,
+              ),
             ),
           ),
         ],
@@ -566,6 +670,44 @@ class _TripDetailPageState extends State<TripDetailPage> {
       }
     }
   }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri launchUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not initiate phone call')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openMap(String address) async {
+    final encodedAddress = Uri.encodeComponent(address);
+    final googleMapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=$encodedAddress';
+    final appleMapsUrl = 'https://maps.apple.com/?q=$encodedAddress';
+
+    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+      await launchUrl(
+        Uri.parse(googleMapsUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } else if (await canLaunchUrl(Uri.parse(appleMapsUrl))) {
+      await launchUrl(
+        Uri.parse(appleMapsUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open map application')),
+        );
+      }
+    }
+  }
 }
 
 class _InfoRow extends StatelessWidget {
@@ -574,12 +716,16 @@ class _InfoRow extends StatelessWidget {
     required this.value,
     this.icon,
     this.onTap,
+    this.valueStyle,
+    this.iconColor,
   });
 
   final String label;
   final String value;
   final IconData? icon;
   final VoidCallback? onTap;
+  final TextStyle? valueStyle;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -597,15 +743,17 @@ class _InfoRow extends StatelessWidget {
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 16, color: Colors.blue),
+                  Icon(icon, size: 16, color: iconColor ?? Colors.blue),
                   const SizedBox(width: 4),
                 ],
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style:
+                      valueStyle ??
+                      const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
               ],
             ),

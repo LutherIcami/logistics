@@ -24,5 +24,7 @@ abstract class AuthRepository {
 
   Future<Either<Failure, void>> logout();
 
+  Future<Either<Failure, void>> recoverPassword(String email);
+
   Future<Either<Failure, UserEntity?>> getCurrentUser();
 }

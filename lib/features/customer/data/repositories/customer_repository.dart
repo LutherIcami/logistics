@@ -1,10 +1,13 @@
-import '../../domain/models/customer_model.dart';
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as path;
+import '../../domain/models/customer_model.dart';
 
 abstract class CustomerRepository {
   Future<List<Customer>> getCustomers();
   Future<Customer?> getCustomerById(String id);
   Future<Customer> updateCustomer(Customer customer);
+  Future<String> uploadProfileImage(String customerId, File image);
 }
 
 class SupabaseCustomerRepository implements CustomerRepository {
@@ -80,6 +83,32 @@ class SupabaseCustomerRepository implements CustomerRepository {
       return Customer.fromJson(response);
     } catch (e) {
       throw Exception('Failed to update customer: $e');
+    }
+  }
+
+  @override
+  Future<String> uploadProfileImage(String customerId, File image) async {
+    try {
+      final fileExt = path.extension(image.path);
+      final fileName =
+          '$customerId${DateTime.now().millisecondsSinceEpoch}$fileExt';
+      final filePath = '$customerId/$fileName';
+
+      await client.storage
+          .from('customer-profiles')
+          .upload(
+            filePath,
+            image,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      final String imageUrl = client.storage
+          .from('customer-profiles')
+          .getPublicUrl(filePath);
+
+      return imageUrl;
+    } catch (e) {
+      throw Exception('Failed to upload profile image: $e');
     }
   }
 }

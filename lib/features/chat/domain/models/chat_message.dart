@@ -1,6 +1,6 @@
 class ChatMessage {
   final String id;
-  final String trackingNumber;
+  final String orderId;
   final String senderId;
   final String? senderName;
   final String senderRole; // 'driver', 'customer', 'admin'
@@ -9,7 +9,7 @@ class ChatMessage {
 
   ChatMessage({
     required this.id,
-    required this.trackingNumber,
+    required this.orderId,
     required this.senderId,
     this.senderName,
     required this.senderRole,
@@ -20,7 +20,7 @@ class ChatMessage {
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     return ChatMessage(
       id: json['id'],
-      trackingNumber: json['tracking_number'] ?? json['trackingNumber'],
+      orderId: json['order_id'] ?? json['orderId'],
       senderId: json['sender_id'] ?? json['senderId'],
       senderName: json['sender_name'] ?? json['senderName'],
       senderRole: json['sender_role'] ?? json['senderRole'],
@@ -31,14 +31,11 @@ class ChatMessage {
 
   Map<String, dynamic> toJson() {
     return {
-      'tracking_number': trackingNumber,
+      'order_id': orderId,
       'sender_id': senderId,
       'sender_name': senderName,
       'sender_role': senderRole,
       'content': content,
-      // created_at is usually handled by DB default, but can send if needed
     };
   }
-
-  bool get isMyMessage => false; // Logic handled in UI usually by comparing IDs
 }

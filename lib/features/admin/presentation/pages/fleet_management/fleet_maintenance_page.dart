@@ -1,46 +1,216 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/models/vehicle_model.dart';
 import '../../providers/vehicle_provider.dart';
 import '../base_module_page.dart';
 
-class FleetMaintenancePage extends StatelessWidget {
+class FleetMaintenancePage extends StatefulWidget {
   const FleetMaintenancePage({super.key});
+
+  @override
+  State<FleetMaintenancePage> createState() => _FleetMaintenancePageState();
+}
+
+class _FleetMaintenancePageState extends State<FleetMaintenancePage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+    Future.microtask(() => context.read<VehicleProvider>().loadLogs());
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<VehicleProvider>(
       builder: (context, provider, _) {
-        final maintenanceVehicles = provider.vehiclesNeedingMaintenance;
-
         return BaseModulePage(
-          title: 'Maintenance Schedule',
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          title: 'Fleet Operations',
+          floatingActionButton: FloatingActionButton.extended(
+            onPressed: () {
+              if (_tabController.index == 2) {
+                context.push('/admin/fleet/maintenance/record-fuel');
+              } else {
+                context.push('/admin/fleet/maintenance/record-service');
+              }
+            },
+            label: Text(
+              _tabController.index == 2 ? 'Record Fuel' : 'Record Service',
+            ),
+            icon: Icon(
+              _tabController.index == 2 ? Icons.local_gas_station : Icons.build,
+            ),
+            backgroundColor: _tabController.index == 2
+                ? Colors.orange
+                : Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+          child: Column(
+            children: [
+              Container(
+                color: Colors.white,
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: const Color(0xFF1E293B),
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: Colors.orange,
+                  indicatorWeight: 3,
+                  tabs: const [
+                    Tab(text: 'Schedule'),
+                    Tab(text: 'Service Logs'),
+                    Tab(text: 'Fuel Logs'),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildScheduleTab(provider),
+                    _buildServiceLogsTab(provider),
+                    _buildFuelLogsTab(provider),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildScheduleTab(VehicleProvider provider) {
+    final maintenanceVehicles = provider.vehiclesNeedingMaintenance;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSummary(provider),
+          const SizedBox(height: 32),
+          const Text(
+            'Upcoming Maintenance',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (maintenanceVehicles.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(40),
+                child: Text('No vehicles need maintenance.'),
+              ),
+            )
+          else
+            ...maintenanceVehicles.map((v) => _MaintenanceItem(vehicle: v)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceLogsTab(VehicleProvider provider) {
+    if (provider.maintenanceLogs.isEmpty) {
+      return const Center(child: Text('No maintenance logs recorded.'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(24),
+      itemCount: provider.maintenanceLogs.length,
+      itemBuilder: (context, index) {
+        final log = provider.maintenanceLogs[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFEFF6FF),
+              child: Icon(Icons.build_rounded, color: Colors.blue),
+            ),
+            title: Text(
+              '${log.vehicleRegistration} - ${log.type.name.toUpperCase()}',
+            ),
+            subtitle: Text(
+              '${log.description}\n${log.serviceProvider ?? "Unknown Provider"}',
+            ),
+            onTap: () => _showServiceLogDetail(context, log),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _buildSummary(provider),
-                const SizedBox(height: 32),
-                const Text(
-                  'Upcoming Maintenance',
-                  style: TextStyle(
-                    fontSize: 18,
+                Text(
+                  'KES ${log.totalCost.toStringAsFixed(0)}',
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
+                    color: Colors.red,
                   ),
                 ),
-                const SizedBox(height: 16),
-                if (maintenanceVehicles.isEmpty)
-                  const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(40),
-                      child: Text('No vehicles need maintenance.'),
-                    ),
-                  )
-                else
-                  ...maintenanceVehicles.map(
-                    (v) => _MaintenanceItem(vehicle: v),
+                Text(
+                  log.date.toString().split(' ')[0],
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+            isThreeLine: true,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFuelLogsTab(VehicleProvider provider) {
+    if (provider.fuelLogs.isEmpty) {
+      return const Center(child: Text('No fuel logs recorded.'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(24),
+      itemCount: provider.fuelLogs.length,
+      itemBuilder: (context, index) {
+        final log = provider.fuelLogs[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundColor: Color(0xFFFFF7ED),
+              child: Icon(
+                Icons.local_gas_station_rounded,
+                color: Colors.orange,
+              ),
+            ),
+            title: Text(log.vehicleRegistration),
+            subtitle: Text(
+              '${log.liters}L @ ${log.stationName ?? "Unknown Station"}',
+            ),
+            onTap: () => _showFuelLogDetail(context, log),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'KES ${log.totalCost.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
                   ),
+                ),
+                Text(
+                  log.date.toString().split(' ')[0],
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ],
             ),
           ),
@@ -77,6 +247,138 @@ class FleetMaintenancePage extends StatelessWidget {
             label: 'In Workshop',
             count: provider.maintenanceVehiclesCount,
             color: Colors.blue,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showServiceLogDetail(BuildContext context, dynamic log) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${log.vehicleRegistration} Service'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _DetailRow(label: 'Type', value: log.type.name.toUpperCase()),
+              _DetailRow(
+                label: 'Date',
+                value: log.date.toString().split(' ')[0],
+              ),
+              _DetailRow(label: 'Odometer', value: '${log.odometer} km'),
+              _DetailRow(
+                label: 'Provider',
+                value: log.serviceProvider ?? 'N/A',
+              ),
+              _DetailRow(
+                label: 'Cost',
+                value: 'KES ${log.totalCost}',
+                isBold: true,
+              ),
+              const Divider(),
+              const Text(
+                'Description:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(log.description),
+              if (log.nextServiceDate != null) ...[
+                const SizedBox(height: 12),
+                _DetailRow(
+                  label: 'Next Service',
+                  value: log.nextServiceDate.toString().split(' ')[0],
+                ),
+              ],
+              if (log.notes != null && log.notes!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  'Notes:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(log.notes!),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showFuelLogDetail(BuildContext context, dynamic log) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${log.vehicleRegistration} Fueling'),
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _DetailRow(label: 'Date', value: log.date.toString().split(' ')[0]),
+            _DetailRow(label: 'Odometer', value: '${log.odometer} km'),
+            _DetailRow(label: 'Quantity', value: '${log.liters} Liters'),
+            _DetailRow(label: 'Station', value: log.stationName ?? 'N/A'),
+            _DetailRow(
+              label: 'Total Cost',
+              value: 'KES ${log.totalCost}',
+              isBold: true,
+            ),
+            _DetailRow(
+              label: 'Price/Liter',
+              value: 'KES ${log.costPerLiter.toStringAsFixed(2)}',
+            ),
+            if (log.notes != null && log.notes!.isNotEmpty) ...[
+              const Divider(),
+              const Text(
+                'Notes:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(log.notes!),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isBold;
+
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.isBold = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -132,8 +434,10 @@ class _MaintenanceItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isOverdue = vehicle.isMaintenanceOverdue;
-    final urgency = vehicle.maintenanceUrgency;
+    final v = vehicle as Vehicle;
+    final isOverdue = v.isMaintenanceOverdue;
+    final urgencyLabel = v.maintenanceUrgencyLabel;
+    final urgencyColor = v.maintenanceUrgencyColor;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -142,7 +446,8 @@ class _MaintenanceItem extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isOverdue ? Colors.red.shade100 : Colors.grey.shade200,
+          color: urgencyColor.withValues(alpha: 0.2),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
@@ -157,12 +462,12 @@ class _MaintenanceItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isOverdue ? Colors.red.shade50 : Colors.orange.shade50,
+              color: urgencyColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               isOverdue ? Icons.error_rounded : Icons.calendar_today_rounded,
-              color: isOverdue ? Colors.red : Colors.orange,
+              color: urgencyColor,
               size: 24,
             ),
           ),
@@ -172,14 +477,14 @@ class _MaintenanceItem extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  vehicle.displayName,
+                  v.displayName,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
                 ),
                 Text(
-                  'Due: ${vehicle.nextMaintenanceDate?.toString().split(' ')[0]}',
+                  'Due: ${v.nextMaintenanceDate?.toString().split(' ')[0] ?? "Not Set"}',
                   style: TextStyle(color: Colors.grey[600], fontSize: 13),
                 ),
               ],
@@ -194,15 +499,13 @@ class _MaintenanceItem extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: (isOverdue ? Colors.red : Colors.orange).withValues(
-                    alpha: 0.1,
-                  ),
+                  color: urgencyColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  urgency.toUpperCase(),
+                  urgencyLabel.toUpperCase(),
                   style: TextStyle(
-                    color: isOverdue ? Colors.red : Colors.orange,
+                    color: urgencyColor,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
@@ -210,7 +513,7 @@ class _MaintenanceItem extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                vehicle.registrationNumber,
+                v.registrationNumber,
                 style: const TextStyle(fontSize: 11, color: Colors.grey),
               ),
             ],

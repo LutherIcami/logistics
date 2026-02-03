@@ -2,16 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../data/repositories/chat_repository.dart';
 import '../../domain/models/chat_message.dart';
-// import 'package:timeago/timeago.dart' as timeago; // If available, otherwise simple formatting
 
 class ChatPage extends StatefulWidget {
-  final String trackingNumber;
+  final String orderId;
   final String currentUserRole; // 'driver', 'customer', 'admin'
   final String? currentUserName;
 
   const ChatPage({
     super.key,
-    required this.trackingNumber,
+    required this.orderId,
     required this.currentUserRole,
     this.currentUserName,
   });
@@ -31,7 +30,7 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _repository = ChatRepository(Supabase.instance.client);
-    _messagesStream = _repository.getMessagesStream(widget.trackingNumber);
+    _messagesStream = _repository.getMessagesStream(widget.orderId);
   }
 
   @override
@@ -48,58 +47,74 @@ class _ChatPageState extends State<ChatPage> {
     setState(() => _isSending = true);
     try {
       await _repository.sendMessage(
-        trackingNumber: widget.trackingNumber,
+        orderId: widget.orderId,
         content: content,
         senderRole: widget.currentUserRole,
         senderName: widget.currentUserName,
       );
       _controller.clear();
-      // Scroll to bottom after sending
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      _scrollToBottom();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to send: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
     }
   }
 
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Determine colors based on role
-    Color userColor;
-    if (widget.currentUserRole == 'driver')
-      userColor = Colors.blue;
-    else if (widget.currentUserRole == 'customer')
-      userColor = Colors.green;
-    else
-      userColor = Colors.purple; // Admin
+    Color themeColor;
+    if (widget.currentUserRole == 'driver') {
+      themeColor = const Color(0xFFFF9800); // Orange for drivers
+    } else if (widget.currentUserRole == 'customer') {
+      themeColor = const Color(0xFF2E7D32); // Green for customers
+    } else {
+      themeColor = const Color(0xFF1E293B); // Dark for Admin
+    }
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Chat', style: TextStyle(fontSize: 16)),
+            const Text(
+              'Order Support Chat',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             Text(
-              'Trip #${widget.trackingNumber}',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+              'Order: ${widget.orderId}',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Colors.white70,
+              ),
             ),
           ],
         ),
-        backgroundColor: userColor,
+        backgroundColor: themeColor,
         foregroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
       ),
       body: Column(
         children: [
@@ -121,30 +136,39 @@ class _ChatPageState extends State<ChatPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
+                          Icons.forum_outlined,
+                          size: 80,
                           color: Colors.grey[300],
                         ),
                         const SizedBox(height: 16),
-                        const Text('No messages yet. Start the conversation!'),
+                        Text(
+                          'No messages for this order yet.',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Start talking to resolve delivery issues.',
+                          style: TextStyle(
+                            color: Colors.grey[400],
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   );
                 }
 
-                // Auto-scroll on new messages (brief delay needed for layout)
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients &&
-                      _scrollController.position.pixels ==
-                          _scrollController.position.maxScrollExtent) {
-                    // Already at bottom, keep it there?
-                    // Or just jump.
-                  }
-                });
+                _scrollToBottom();
 
                 return ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 24,
+                  ),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
@@ -157,7 +181,7 @@ class _ChatPageState extends State<ChatPage> {
               },
             ),
           ),
-          _buildInputArea(userColor),
+          _buildInputArea(themeColor),
         ],
       ),
     );
@@ -165,14 +189,14 @@ class _ChatPageState extends State<ChatPage> {
 
   Widget _buildInputArea(Color accentColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            offset: const Offset(0, -2),
-            blurRadius: 4,
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, -4),
+            blurRadius: 10,
           ),
         ],
       ),
@@ -180,40 +204,58 @@ class _ChatPageState extends State<ChatPage> {
         child: Row(
           children: [
             Expanded(
-              child: TextField(
-                controller: _controller,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(28),
                 ),
-                minLines: 1,
-                maxLines: 4,
+                child: TextField(
+                  controller: _controller,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    hintText: 'Type your message...',
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
+                  minLines: 1,
+                  maxLines: 4,
+                ),
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: _isSending ? null : _sendMessage,
-              icon: _isSending
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
+            const SizedBox(width: 12),
+            GestureDetector(
+              onTap: _isSending ? null : _sendMessage,
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: _isSending
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.send_rounded,
                         color: Colors.white,
+                        size: 24,
                       ),
-                    )
-                  : const Icon(Icons.send),
-              style: IconButton.styleFrom(backgroundColor: accentColor),
+              ),
             ),
           ],
         ),
@@ -231,15 +273,15 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final senderLabel = message.senderRole.isEmpty
-        ? 'Unknown'
+        ? 'System'
         : message.senderRole[0].toUpperCase() + message.senderRole.substring(1);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
+        margin: const EdgeInsets.only(bottom: 20),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
         child: Column(
           crossAxisAlignment: isMe
@@ -248,37 +290,71 @@ class _ChatBubble extends StatelessWidget {
           children: [
             if (!isMe)
               Padding(
-                padding: const EdgeInsets.only(left: 12, bottom: 4),
-                child: Text(
-                  message.senderName ??
-                      senderLabel, // Show name if available, else role
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.bold,
-                  ),
+                padding: const EdgeInsets.only(left: 8, bottom: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      message.senderName ?? senderLabel,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getRoleColor(
+                          message.senderRole,
+                        ).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        senderLabel.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: _getRoleColor(message.senderRole),
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isMe ? Colors.blue.shade600 : Colors.grey[200],
+                color: isMe ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
                   bottomLeft: isMe
-                      ? const Radius.circular(16)
+                      ? const Radius.circular(20)
                       : const Radius.circular(4),
                   bottomRight: isMe
                       ? const Radius.circular(4)
-                      : const Radius.circular(16),
+                      : const Radius.circular(20),
                 ),
+                boxShadow: [
+                  if (!isMe)
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
               ),
               child: Text(
                 message.content,
                 style: TextStyle(
-                  color: isMe ? Colors.white : Colors.black87,
+                  color: isMe ? Colors.white : const Color(0xFF334155),
                   fontSize: 15,
+                  height: 1.4,
                 ),
               ),
             ),
@@ -293,6 +369,19 @@ class _ChatBubble extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role) {
+      case 'driver':
+        return Colors.orange;
+      case 'customer':
+        return Colors.green;
+      case 'admin':
+        return Colors.indigo;
+      default:
+        return Colors.grey;
+    }
   }
 
   String _formatTime(DateTime dt) {

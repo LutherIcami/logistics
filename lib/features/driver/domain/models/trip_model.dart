@@ -20,6 +20,9 @@ class Trip {
   final String? specialInstructions;
   final double? distance; // in km
   final double? estimatedEarnings;
+  final double? totalCost;
+  final double? driverEarnings;
+  final double? companyRevenue;
   final Map<String, dynamic>? additionalInfo;
   final String? trackingNumber;
 
@@ -43,6 +46,9 @@ class Trip {
     this.specialInstructions,
     this.distance,
     this.estimatedEarnings,
+    this.totalCost,
+    this.driverEarnings,
+    this.companyRevenue,
     this.additionalInfo,
     this.trackingNumber,
   });
@@ -69,6 +75,9 @@ class Trip {
         'special_instructions': specialInstructions,
       if (distance != null) 'distance': distance,
       if (estimatedEarnings != null) 'estimated_earnings': estimatedEarnings,
+      if (totalCost != null) 'total_cost': totalCost,
+      if (driverEarnings != null) 'driver_earnings': driverEarnings,
+      if (companyRevenue != null) 'company_revenue': companyRevenue,
       if (additionalInfo != null) 'additional_info': additionalInfo,
       if (trackingNumber != null) 'tracking_number': trackingNumber,
     };
@@ -113,6 +122,11 @@ class Trip {
       distance: (json['distance'])?.toDouble(),
       estimatedEarnings:
           (json['estimated_earnings'] ?? json['estimatedEarnings'])?.toDouble(),
+      totalCost: (json['total_cost'] ?? json['totalCost'])?.toDouble(),
+      driverEarnings: (json['driver_earnings'] ?? json['driverEarnings'])
+          ?.toDouble(),
+      companyRevenue: (json['company_revenue'] ?? json['companyRevenue'])
+          ?.toDouble(),
       additionalInfo: json['additional_info'] ?? json['additionalInfo'],
       trackingNumber: json['tracking_number'] ?? json['trackingNumber'],
     );

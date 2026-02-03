@@ -155,7 +155,7 @@ class _EarningsPageState extends State<EarningsPage> {
             child: Column(
               children: [
                 _EarningsRow(
-                  label: 'Gross Revenue',
+                  label: 'Total Earnings',
                   amount: provider.getEarningsForPeriod(_selectedPeriod),
                   icon: Icons.payments_rounded,
                   color: Colors.blue,

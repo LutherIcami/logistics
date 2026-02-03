@@ -141,10 +141,12 @@ class CustomerNotificationsPage extends StatelessWidget {
                   .where((id) => id != 'profile-incomplete')
                   .toList();
 
-              if (authIds.isNotEmpty)
+              if (authIds.isNotEmpty) {
                 authProvider.markAllNotificationsAsRead(authIds);
-              if (customerIds.isNotEmpty)
+              }
+              if (customerIds.isNotEmpty) {
                 provider.markAllNotificationsAsRead(customerIds);
+              }
 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

@@ -285,7 +285,7 @@ class _SettingsPageState extends State<SettingsPage> {
         style: TextStyle(fontSize: 11, color: Colors.grey[500]),
       ),
       secondary: _buildIconFrame(icon, color),
-      activeColor: const Color(0xFF1E293B),
+      activeThumbColor: const Color(0xFF1E293B),
     );
   }
 

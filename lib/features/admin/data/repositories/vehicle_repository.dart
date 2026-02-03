@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import '../../../admin/domain/models/vehicle_model.dart';
+import '../../../admin/domain/models/fleet_models.dart';
 
 /// Abstract contract for vehicle data access.
 abstract class VehicleRepository {
@@ -12,6 +13,12 @@ abstract class VehicleRepository {
   Future<List<Vehicle>> getVehiclesByStatus(String status);
   Future<List<Vehicle>> getVehiclesNeedingMaintenance();
   Future<List<String>> uploadVehicleImages(String vehicleId, List<File> images);
+
+  // New Fuel and Maintenance methods
+  Future<List<FuelLog>> getFuelLogs({String? vehicleId});
+  Future<FuelLog> addFuelLog(FuelLog log);
+  Future<List<MaintenanceLog>> getMaintenanceLogs({String? vehicleId});
+  Future<MaintenanceLog> addMaintenanceLog(MaintenanceLog log);
 }
 
 /// Simple in-memory mock implementation for local/testing use.
@@ -195,4 +202,17 @@ class MockVehicleRepository implements VehicleRepository {
     await Future<void>.delayed(const Duration(seconds: 1));
     return images.map((_) => 'https://via.placeholder.com/400').toList();
   }
+
+  @override
+  Future<List<FuelLog>> getFuelLogs({String? vehicleId}) async => [];
+
+  @override
+  Future<FuelLog> addFuelLog(FuelLog log) async => log;
+
+  @override
+  Future<List<MaintenanceLog>> getMaintenanceLogs({String? vehicleId}) async =>
+      [];
+
+  @override
+  Future<MaintenanceLog> addMaintenanceLog(MaintenanceLog log) async => log;
 }

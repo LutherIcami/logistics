@@ -25,6 +25,13 @@ class FinanceProvider extends ChangeNotifier {
       .where((t) => t.type == TransactionType.income)
       .fold(0, (sum, t) => sum + t.amount);
 
+  double get commissionIncome => _transactions
+      .where(
+        (t) =>
+            t.category == 'commission' || t.description.contains('Commission'),
+      )
+      .fold(0, (sum, t) => sum + t.amount);
+
   double get totalExpenses => _transactions
       .where((t) => t.type == TransactionType.expense)
       .fold(0, (sum, t) => sum + t.amount);
@@ -65,7 +72,7 @@ class FinanceProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to create invoice';
+      _error = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       return false;
     }
@@ -79,6 +86,57 @@ class FinanceProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = 'Failed to add transaction';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> deleteTransaction(String id) async {
+    try {
+      await _repository.deleteTransaction(id);
+      _transactions.removeWhere((t) => t.id == id);
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to delete transaction';
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateInvoice(Invoice invoice) async {
+    try {
+      // Check if we need to create/remove an automated transaction
+      final oldInvoice = _invoices.firstWhere((inv) => inv.id == invoice.id);
+
+      // 1. If moving TO Paid: Add automated income transaction
+      if (invoice.status == InvoiceStatus.paid &&
+          oldInvoice.status != InvoiceStatus.paid) {
+        final automatedTx = FinancialTransaction(
+          id: 'AUTO-${invoice.id}',
+          type: TransactionType.income,
+          amount: invoice.totalAmount,
+          date: DateTime.now(),
+          description:
+              'Payment received: ${invoice.customerName} (Inv #${invoice.id.substring(0, 8)})',
+          referenceId: invoice.id,
+        );
+        await addTransaction(automatedTx);
+      }
+
+      // 2. If moving AWAY from Paid: Remove automated transaction
+      if (oldInvoice.status == InvoiceStatus.paid &&
+          invoice.status != InvoiceStatus.paid) {
+        await deleteTransaction('AUTO-${invoice.id}');
+      }
+
+      await _repository.updateInvoice(invoice);
+      final index = _invoices.indexWhere((inv) => inv.id == invoice.id);
+      if (index != -1) {
+        _invoices[index] = invoice;
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      _error = 'Failed to update invoice';
       notifyListeners();
       return false;
     }

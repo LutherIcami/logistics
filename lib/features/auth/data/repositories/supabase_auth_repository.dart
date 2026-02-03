@@ -71,6 +71,17 @@ class SupabaseAuthRepository implements AuthRepository {
           'rating': 5.0, // Start with a perfect rating
           'joinDate': DateTime.now().toIso8601String(),
         });
+      } else if (role == 'customer') {
+        // Initialize the customer record
+        await client.from('customers').insert({
+          'id': response.user!.id,
+          'name': fullName,
+          'email': email,
+          'phone': '', // To be filled during onboarding/first order
+          'joinDate': DateTime.now().toIso8601String(),
+          'totalOrders': 0,
+          'totalSpent': 0.0,
+        });
       }
 
       return Right(
@@ -81,8 +92,20 @@ class SupabaseAuthRepository implements AuthRepository {
           role: role,
         ),
       );
+    } on supabase.AuthException catch (e) {
+      if (e.message.contains('User already registered') ||
+          e.code == 'user_already_exists') {
+        return const Left(
+          ServerFailure(
+            'This email is already in use. Please try signing in instead.',
+          ),
+        );
+      }
+      return Left(ServerFailure(e.message));
     } catch (e) {
-      return Left(ServerFailure(e.toString()));
+      return Left(
+        ServerFailure('An unexpected error occurred: ${e.toString()}'),
+      );
     }
   }
 
@@ -123,6 +146,19 @@ class SupabaseAuthRepository implements AuthRepository {
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> recoverPassword(String email) async {
+    try {
+      await client.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'io.supabase.logistics://reset-password',
+      );
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure('Password recovery failed: ${e.toString()}'));
     }
   }
 

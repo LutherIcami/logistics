@@ -35,6 +35,7 @@ class AdminDashboard extends StatelessWidget {
                   _buildSectionTitle('Network Vitals'),
                   const SizedBox(height: 16),
                   _buildVitalsRow(
+                    context,
                     vehicleProvider,
                     financeProvider,
                     shipmentProvider,
@@ -187,6 +188,7 @@ class AdminDashboard extends StatelessWidget {
   }
 
   Widget _buildVitalsRow(
+    BuildContext context,
     VehicleProvider vp,
     FinanceProvider fp,
     ShipmentProvider sp,
@@ -200,6 +202,7 @@ class AdminDashboard extends StatelessWidget {
             value: '${sp.pendingCount} New',
             icon: Icons.inventory_2_rounded,
             color: Colors.orange,
+            onTap: () => context.go('/admin/shipments'),
           ),
           const SizedBox(width: 16),
           AdminStatCard(
@@ -207,6 +210,7 @@ class AdminDashboard extends StatelessWidget {
             value: '${sp.activeCount} In Transit',
             icon: Icons.radar_rounded,
             color: Colors.blue,
+            onTap: () => context.go('/admin/shipments'),
           ),
           const SizedBox(width: 16),
           AdminStatCard(
@@ -214,6 +218,7 @@ class AdminDashboard extends StatelessWidget {
             value: '${sp.assignedCount} Assigned',
             icon: Icons.person_pin_rounded,
             color: Colors.purple,
+            onTap: () => context.go('/admin/drivers'),
           ),
         ],
       ),
@@ -412,6 +417,16 @@ class AdminDashboard extends StatelessWidget {
                   title: topActivities[i]['title'] as String,
                   time: topActivities[i]['time'] as String,
                   user: topActivities[i]['user'] as String,
+                  onTap: () {
+                    final title = topActivities[i]['title'] as String;
+                    if (title.contains('Shipment')) {
+                      context.go('/admin/shipments');
+                    } else if (title.contains('Maintenance')) {
+                      context.go('/admin/fleet');
+                    } else if (title.contains('Fleet Expand')) {
+                      context.go('/admin/fleet');
+                    }
+                  },
                 ),
                 if (i < topActivities.length - 1)
                   const Divider(height: 1, indent: 64),
@@ -521,6 +536,7 @@ class _ActivityItem extends StatelessWidget {
   final String title;
   final String time;
   final String user;
+  final VoidCallback? onTap;
 
   const _ActivityItem({
     required this.icon,
@@ -528,44 +544,54 @@ class _ActivityItem extends StatelessWidget {
     required this.title,
     required this.time,
     required this.user,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 20),
             ),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Color(0xFF1E293B),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                      color: Color(0xFF1E293B),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'By $user • $time',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 11),
-                ),
-              ],
+                  const SizedBox(height: 2),
+                  Text(
+                    'By $user • $time',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: Colors.grey[400],
+              ),
+          ],
+        ),
       ),
     );
   }

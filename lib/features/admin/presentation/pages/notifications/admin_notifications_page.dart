@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
+import '../../providers/vehicle_provider.dart';
 
 class AdminNotificationsPage extends StatelessWidget {
   const AdminNotificationsPage({super.key});
@@ -13,9 +14,12 @@ class AdminNotificationsPage extends StatelessWidget {
         backgroundColor: const Color(0xFF0F172A),
         foregroundColor: Colors.white,
       ),
-      body: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          final notifications = _generateNotifications(authProvider);
+      body: Consumer2<AuthProvider, VehicleProvider>(
+        builder: (context, authProvider, vehicleProvider, _) {
+          final notifications = _generateNotifications(
+            authProvider,
+            vehicleProvider,
+          );
 
           return Column(
             children: [
@@ -41,10 +45,13 @@ class AdminNotificationsPage extends StatelessWidget {
     );
   }
 
-  List<_NotificationData> _generateNotifications(AuthProvider authProvider) {
+  List<_NotificationData> _generateNotifications(
+    AuthProvider authProvider,
+    VehicleProvider vehicleProvider,
+  ) {
     final List<_NotificationData> list = [];
 
-    // Add Profile Incomplete Alert
+    // 1. Profile Incomplete Alert
     final user = authProvider.user;
     if (user != null && !user.isProfileComplete) {
       list.add(
@@ -60,7 +67,68 @@ class AdminNotificationsPage extends StatelessWidget {
       );
     }
 
-    // TODO: Add other admin notifications (e.g. system alerts, urgent maintenance)
+    // 2. Urgent Maintenance Alerts
+    final overdueVehicles = vehicleProvider.vehicles
+        .where((v) => v.isMaintenanceOverdue)
+        .toList();
+    for (final v in overdueVehicles) {
+      list.add(
+        _NotificationData(
+          id: 'maintenance-overdue-${v.id}',
+          title: 'Urgent Maintenance: ${v.registrationNumber}',
+          message:
+              'Service for ${v.make} ${v.model} is overdue since ${v.nextMaintenanceDate?.toString().split(' ')[0]}. Safety risk detected.',
+          time: v.nextMaintenanceDate ?? DateTime.now(),
+          type: NotificationType.error,
+          isRead: authProvider.isNotificationRead(
+            'maintenance-overdue-${v.id}',
+          ),
+        ),
+      );
+    }
+
+    // 3. Upcoming Maintenance Alerts (within 3 days)
+    final upcomingVehicles = vehicleProvider.vehicles.where((v) {
+      if (v.nextMaintenanceDate == null || v.isMaintenanceOverdue) return false;
+      final diff = v.nextMaintenanceDate!.difference(DateTime.now()).inDays;
+      return diff >= 0 && diff <= 3;
+    }).toList();
+    for (final v in upcomingVehicles) {
+      list.add(
+        _NotificationData(
+          id: 'maintenance-upcoming-${v.id}',
+          title: 'Upcoming Service: ${v.registrationNumber}',
+          message:
+              'Scheduled maintenance for ${v.make} ${v.model} is due in ${v.nextMaintenanceDate!.difference(DateTime.now()).inDays} days.',
+          time: DateTime.now(),
+          type: NotificationType.warning,
+          isRead: authProvider.isNotificationRead(
+            'maintenance-upcoming-${v.id}',
+          ),
+        ),
+      );
+    }
+
+    // 4. Low Fuel Alerts (below 15%)
+    final lowFuelVehicles = vehicleProvider.vehicles
+        .where((v) => v.fuelLevelPercentage < 15 && v.isActive)
+        .toList();
+    for (final v in lowFuelVehicles) {
+      list.add(
+        _NotificationData(
+          id: 'low-fuel-${v.id}',
+          title: 'Low Fuel Alert: ${v.registrationNumber}',
+          message:
+              'Vehicle is running low on fuel (${v.fuelLevelPercentage.toStringAsFixed(1)}%). Refill recommended before next deployment.',
+          time: DateTime.now(),
+          type: NotificationType.warning,
+          isRead: authProvider.isNotificationRead('low-fuel-${v.id}'),
+        ),
+      );
+    }
+
+    // Sort by time (newest first)
+    list.sort((a, b) => b.time.compareTo(a.time));
 
     return list;
   }

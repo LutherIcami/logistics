@@ -72,7 +72,8 @@ class _InvoiceFormPageState extends State<InvoiceFormPage> {
             TextFormField(
               controller: _notesController,
               decoration: const InputDecoration(labelText: 'Notes'),
-              maxLines: 3,
+              minLines: 3,
+              maxLines: 5,
             ),
             const SizedBox(height: 32),
             ElevatedButton(

@@ -321,7 +321,7 @@ class _DriverFormPageState extends State<DriverFormPage> {
   Widget _buildStatusSelector() {
     return _buildCard([
       DropdownButtonFormField<String>(
-        value: _status,
+        initialValue: _status,
         decoration: InputDecoration(
           labelText: 'Employment Status',
           labelStyle: const TextStyle(

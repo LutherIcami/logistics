@@ -37,10 +37,119 @@ class InvoicesListPage extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/admin/finance/invoices/new'),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _CreateInvoiceFAB(),
+    );
+  }
+}
+
+class _CreateInvoiceFAB extends StatefulWidget {
+  @override
+  State<_CreateInvoiceFAB> createState() => _CreateInvoiceFABState();
+}
+
+class _CreateInvoiceFABState extends State<_CreateInvoiceFAB> {
+  bool _isExpanded = false;
+
+  void _toggleMenu() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        // Option 1: From Order (Recommended)
+        if (_isExpanded) ...[
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Row(
+                    children: [
+                      Text(
+                        'From Order ',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '(Recommended)',
+                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FloatingActionButton(
+                  heroTag: 'from_order',
+                  backgroundColor: Colors.blue,
+                  onPressed: () {
+                    context.push('/admin/finance/invoices/from-order');
+                    _toggleMenu();
+                  },
+                  child: const Icon(Icons.receipt_long),
+                ),
+              ],
+            ),
+          ),
+          // Option 2: Manual Invoice
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[700],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'Manual Invoice',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                FloatingActionButton(
+                  heroTag: 'manual',
+                  backgroundColor: Colors.grey[700],
+                  onPressed: () {
+                    context.push('/admin/finance/invoices/new');
+                    _toggleMenu();
+                  },
+                  child: const Icon(Icons.edit),
+                ),
+              ],
+            ),
+          ),
+        ],
+        // Main FAB
+        FloatingActionButton(
+          onPressed: _toggleMenu,
+          child: Icon(_isExpanded ? Icons.close : Icons.add),
+        ),
+      ],
     );
   }
 }
@@ -71,7 +180,7 @@ class _InvoiceListItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         onTap: () {
-          // View details
+          context.push('/admin/finance/invoices/${invoice.id}');
         },
         leading: CircleAvatar(
           backgroundColor: statusColor.withValues(alpha: 0.1),

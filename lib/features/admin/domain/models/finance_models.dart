@@ -39,6 +39,7 @@ class Invoice {
   final List<InvoiceItem> items;
   final InvoiceStatus status;
   final String? notes;
+  final String? orderId; // Reference to the order this invoice is for
 
   Invoice({
     required this.id,
@@ -49,6 +50,7 @@ class Invoice {
     required this.items,
     this.status = InvoiceStatus.draft,
     this.notes,
+    this.orderId,
   });
 
   double get totalAmount => items.fold(0, (sum, item) => sum + item.total);
@@ -61,6 +63,7 @@ class Invoice {
     'dueDate': dueDate.toIso8601String(),
     'status': status.name,
     'notes': notes,
+    'orderId': orderId,
     'items': items.map((e) => e.toJson()).toList(),
     'totalAmount': totalAmount,
   };
@@ -77,6 +80,7 @@ class Invoice {
       orElse: () => InvoiceStatus.draft,
     ),
     notes: json['notes'],
+    orderId: json['orderId'],
   );
 
   Invoice copyWith({
@@ -88,6 +92,7 @@ class Invoice {
     List<InvoiceItem>? items,
     InvoiceStatus? status,
     String? notes,
+    String? orderId,
   }) {
     return Invoice(
       id: id ?? this.id,
@@ -98,6 +103,7 @@ class Invoice {
       items: items ?? this.items,
       status: status ?? this.status,
       notes: notes ?? this.notes,
+      orderId: orderId ?? this.orderId,
     );
   }
 }

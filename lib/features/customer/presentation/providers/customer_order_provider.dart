@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/order_model.dart';
 import '../../domain/models/customer_model.dart';
@@ -189,15 +190,34 @@ class CustomerOrderProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateCustomer(Customer customer) async {
+  Future<bool> updateCustomer(Customer customer, {File? image}) async {
+    _setLoading(true);
     try {
-      _currentCustomer = customer;
+      String? imageUrl = customer.profileImage;
+
+      // Handle image upload if provided
+      if (image != null) {
+        imageUrl = await _customerRepository.uploadProfileImage(
+          customer.id,
+          image,
+        );
+      }
+
+      final updatedCustomer = customer.copyWith(profileImage: imageUrl);
+      final savedCustomer = await _customerRepository.updateCustomer(
+        updatedCustomer,
+      );
+
+      _currentCustomer = savedCustomer;
+      _error = null;
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to update customer';
+      _error = 'Failed to update customer: ${e.toString()}';
       notifyListeners();
       return false;
+    } finally {
+      _setLoading(false);
     }
   }
 

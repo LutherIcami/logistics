@@ -251,7 +251,7 @@ class _TripListItem extends StatelessWidget {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'KES ${trip.estimatedEarnings!.toStringAsFixed(0)}',
+                          'Your Earnings: KES ${trip.estimatedEarnings!.toStringAsFixed(0)}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             color: Colors.green,

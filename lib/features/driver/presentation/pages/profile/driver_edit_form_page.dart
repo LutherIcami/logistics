@@ -169,30 +169,57 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final driverProvider = context.watch<DriverTripProvider>();
+    final currentDriver = driverProvider.currentDriver;
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Edit Profile'),
-        backgroundColor: Colors.orangeAccent,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Edit Profile Settings',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
+        elevation: 0,
+        centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          onPressed: () => context.pop(),
+        ),
         actions: [
           if (_isLoading)
             const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF0F172A),
+                    ),
+                  ),
                 ),
               ),
             )
           else
-            IconButton(icon: const Icon(Icons.check), onPressed: _saveChanges),
+            TextButton(
+              onPressed: _saveChanges,
+              child: const Text(
+                'SAVE',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                  color: Colors.blue,
+                ),
+              ),
+            ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
@@ -201,16 +228,13 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
               // Profile Image Section
               Center(
                 child: ProfileImagePicker(
-                  currentImageUrl: context
-                      .read<DriverTripProvider>()
-                      .currentDriver
-                      ?.profileImage,
+                  currentImageUrl: currentDriver?.profileImage,
                   placeholderText: _getInitials(
                     _nameController.text.isNotEmpty
                         ? _nameController.text
                         : 'Driver',
                   ),
-                  backgroundColor: Colors.orangeAccent,
+                  backgroundColor: const Color(0xFF0F172A),
                   onImageSelected: (file) {
                     setState(() {
                       _profileImage = file;
@@ -218,20 +242,29 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
                   },
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // Personal Information
-              Text(
-                'Personal Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              const Row(
+                children: [
+                  Icon(Icons.person_rounded, color: Colors.blue, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'PERSONAL INFORMATION',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _nameController,
                 label: 'Full Name',
-                icon: Icons.person,
+                icon: Icons.person_rounded,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter your name';
@@ -243,7 +276,7 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
               _buildTextField(
                 controller: _emailController,
                 label: 'Email Address',
-                icon: Icons.email,
+                icon: Icons.email_rounded,
                 keyboardType: TextInputType.emailAddress,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -259,7 +292,7 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
               _buildTextField(
                 controller: _phoneController,
                 label: 'Phone Number',
-                icon: Icons.phone,
+                icon: Icons.phone_rounded,
                 keyboardType: TextInputType.phone,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -268,62 +301,94 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // License Information
-              Text(
-                'License Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              const Row(
+                children: [
+                  Icon(Icons.badge_rounded, color: Colors.orange, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'LICENSE INFORMATION',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _licenseNumberController,
                 label: 'License Number',
-                icon: Icons.badge,
+                icon: Icons.badge_rounded,
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _licenseExpiryController,
                 label: 'License Expiry Date',
-                icon: Icons.calendar_today,
+                icon: Icons.calendar_today_rounded,
                 hintText: 'YYYY-MM-DD',
                 readOnly: true,
                 onTap: () => _selectDate(context, _licenseExpiryController),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // Work Information
-              Text(
-                'Work Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              const Row(
+                children: [
+                  Icon(Icons.work_rounded, color: Colors.green, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'WORK INFORMATION',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _currentLocationController,
                 label: 'Current Location',
-                icon: Icons.location_on,
+                icon: Icons.location_on_rounded,
               ),
               const SizedBox(height: 16),
               _buildTextField(
                 controller: _currentVehicleController,
                 label: 'Current Vehicle',
-                icon: Icons.local_shipping,
+                icon: Icons.local_shipping_rounded,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 initialValue: _status,
                 decoration: InputDecoration(
-                  labelText: 'Status',
-                  prefixIcon: const Icon(Icons.info),
+                  labelText: 'Availability Status',
+                  labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
+                  prefixIcon: const Icon(Icons.info_outline_rounded),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: Colors.grey.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Colors.blue, width: 2),
                   ),
                   filled: true,
-                  fillColor: Colors.grey[50],
+                  fillColor: Colors.white,
                 ),
                 items: const [
                   DropdownMenuItem(value: 'active', child: Text('Active')),
@@ -338,27 +403,47 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
                   }
                 },
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 48),
 
               // Save Button
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _saveChanges,
-                icon: const Icon(Icons.save),
-                label: const Text('Save Changes'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: Colors.orangeAccent,
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: FilledButton(
+                  onPressed: _isLoading ? null : _saveChanges,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'SUBMIT UPDATES',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.cancel),
-                label: const Text('Cancel'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text(
+                    'DISCARD CHANGES',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
                 ),
               ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -382,13 +467,30 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
       validator: validator,
       readOnly: readOnly,
       onTap: onTap,
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
+        labelStyle: const TextStyle(color: Colors.grey, fontSize: 14),
         hintText: hintText,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        prefixIcon: Icon(icon, size: 20),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.blue, width: 2),
+        ),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 18,
+        ),
       ),
     );
   }

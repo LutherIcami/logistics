@@ -260,6 +260,31 @@ class Vehicle {
     return 'none';
   }
 
+  String get maintenanceUrgencyLabel {
+    if (nextMaintenanceDate == null) return 'Healthy';
+    final diff = nextMaintenanceDate!.difference(DateTime.now()).inDays;
+    if (diff < 0) return 'Critical';
+    if (diff <= 3) return 'Upcoming';
+    if (diff <= 7) return 'Due Soon';
+    return 'Healthy';
+  }
+
+  Color get maintenanceUrgencyColor {
+    final urgency = maintenanceUrgencyLabel;
+    switch (urgency) {
+      case 'Critical':
+        return Colors.red;
+      case 'Upcoming':
+        return Colors.orange;
+      case 'Due Soon':
+        return Colors.blue;
+      case 'Healthy':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
   bool get insuranceExpired {
     if (insuranceExpiry == null) return false;
     try {

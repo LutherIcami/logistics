@@ -38,16 +38,16 @@ class Driver {
       'name': name,
       'email': email,
       'phone': phone,
-      if (licenseNumber != null) 'licenseNumber': licenseNumber,
-      if (licenseExpiry != null) 'licenseExpiry': licenseExpiry,
+      'license_number': licenseNumber,
+      'license_expiry': licenseExpiry,
       'status': status,
       'rating': rating,
-      'totalTrips': totalTrips,
-      if (currentLocation != null) 'currentLocation': currentLocation,
-      if (currentVehicle != null) 'currentVehicle': currentVehicle,
-      'joinDate': joinDate.toIso8601String(),
-      if (profileImage != null) 'profileImage': profileImage,
-      if (additionalInfo != null) 'additionalInfo': additionalInfo,
+      'total_trips': totalTrips,
+      'current_location': currentLocation,
+      'current_vehicle': currentVehicle,
+      'join_date': joinDate.toIso8601String(),
+      'profile_image': profileImage,
+      'additional_info': additionalInfo,
     };
   }
 
@@ -58,16 +58,20 @@ class Driver {
       name: json['name'],
       email: json['email'],
       phone: json['phone'],
-      licenseNumber: json['licenseNumber'],
-      licenseExpiry: json['licenseExpiry'],
+      licenseNumber: json['license_number'] ?? json['licenseNumber'],
+      licenseExpiry: json['license_expiry'] ?? json['licenseExpiry'],
       status: json['status'] ?? 'active',
       rating: (json['rating'] ?? 0.0).toDouble(),
-      totalTrips: json['totalTrips'] ?? 0,
-      currentLocation: json['currentLocation'],
-      currentVehicle: json['currentVehicle'],
-      joinDate: DateTime.parse(json['joinDate']),
-      profileImage: json['profileImage'],
-      additionalInfo: json['additionalInfo'],
+      totalTrips: json['total_trips'] ?? json['totalTrips'] ?? 0,
+      currentLocation: json['current_location'] ?? json['currentLocation'],
+      currentVehicle: json['current_vehicle'] ?? json['currentVehicle'],
+      joinDate: DateTime.parse(
+        json['join_date'] ??
+            json['joinDate'] ??
+            DateTime.now().toIso8601String(),
+      ),
+      profileImage: json['profile_image'] ?? json['profileImage'],
+      additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
 

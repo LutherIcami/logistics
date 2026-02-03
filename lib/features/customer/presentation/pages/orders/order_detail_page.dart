@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/customer_order_provider.dart';
 
 class OrderDetailPage extends StatefulWidget {
@@ -220,6 +221,15 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                                 ],
                               ),
                             ),
+                            IconButton(
+                              onPressed: () => _openMap(order.pickupLocation),
+                              icon: const Icon(
+                                Icons.map_outlined,
+                                color: Colors.blue,
+                                size: 20,
+                              ),
+                              tooltip: 'View on map',
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -257,6 +267,15 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                                   ),
                                 ],
                               ),
+                            ),
+                            IconButton(
+                              onPressed: () => _openMap(order.deliveryLocation),
+                              icon: const Icon(
+                                Icons.map_outlined,
+                                color: Colors.green,
+                                size: 20,
+                              ),
+                              tooltip: 'View on map',
                             ),
                           ],
                         ),
@@ -516,6 +535,31 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Failed to cancel order')));
+      }
+    }
+  }
+
+  Future<void> _openMap(String address) async {
+    final encodedAddress = Uri.encodeComponent(address);
+    final googleMapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=$encodedAddress';
+    final appleMapsUrl = 'https://maps.apple.com/?q=$encodedAddress';
+
+    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+      await launchUrl(
+        Uri.parse(googleMapsUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } else if (await canLaunchUrl(Uri.parse(appleMapsUrl))) {
+      await launchUrl(
+        Uri.parse(appleMapsUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open map application')),
+        );
       }
     }
   }

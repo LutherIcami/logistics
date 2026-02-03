@@ -188,7 +188,7 @@ class DriverProfilePage extends StatelessWidget {
                   Expanded(
                     child: _StatCard(
                       label: 'Trips',
-                      value: '${driver.totalTrips}',
+                      value: '${provider.completedTrips.length}',
                       icon: Icons.local_shipping_rounded,
                       color: Colors.blue,
                       suffix: 'completed',
@@ -198,8 +198,9 @@ class DriverProfilePage extends StatelessWidget {
                   Expanded(
                     child: _StatCard(
                       label: 'Earned',
-                      value:
-                          'KES ${(provider.totalEarnings / 1000).toStringAsFixed(0)}k',
+                      value: provider.totalEarnings >= 1000
+                          ? 'KES ${(provider.totalEarnings / 1000).toStringAsFixed(1)}k'
+                          : 'KES ${provider.totalEarnings.toStringAsFixed(0)}',
                       icon: Icons.payments_rounded,
                       color: Colors.green,
                       suffix: 'total',
@@ -209,51 +210,59 @@ class DriverProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 28),
 
-              // Personal Information Section
               _SectionHeader(
-                title: 'Personal Information',
-                icon: Icons.person_outline_rounded,
-                color: Colors.orange,
+                title: 'PERSONAL INFORMATION',
+                icon: Icons.person_rounded,
+                color: const Color(0xFF0F172A), // Deep navy for visibility
               ),
-              const SizedBox(height: 12),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Column(
                     children: [
                       _ProfileInfoTile(
                         icon: Icons.email_rounded,
                         label: 'Email Address',
                         value: driver.email,
-                        iconColor: Colors.red,
+                        iconColor: Colors.red.shade600,
                       ),
-                      const Divider(height: 1, indent: 56),
+                      _Divider(),
                       _ProfileInfoTile(
                         icon: Icons.phone_rounded,
                         label: 'Phone Number',
                         value: driver.phone,
-                        iconColor: Colors.green,
+                        iconColor: Colors.green.shade600,
                       ),
                       if (driver.licenseNumber != null) ...[
-                        const Divider(height: 1, indent: 56),
+                        _Divider(),
                         _ProfileInfoTile(
                           icon: Icons.badge_rounded,
                           label: 'License Number',
                           value: driver.licenseNumber!,
-                          iconColor: Colors.blue,
+                          iconColor: Colors.blue.shade600,
                         ),
                       ],
                       if (driver.licenseExpiry != null) ...[
-                        const Divider(height: 1, indent: 56),
+                        _Divider(),
                         _ProfileInfoTile(
                           icon: Icons.event_rounded,
                           label: 'License Expiry',
                           value: driver.licenseExpiry!,
-                          iconColor: Colors.purple,
+                          iconColor: Colors.purple.shade600,
                         ),
                       ],
                     ],
@@ -262,27 +271,35 @@ class DriverProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Work Information Section
               _SectionHeader(
-                title: 'Work Information',
-                icon: Icons.work_outline_rounded,
-                color: Colors.blue,
+                title: 'WORK INFORMATION',
+                icon: Icons.business_center_rounded,
+                color: const Color(0xFF0F172A),
               ),
-              const SizedBox(height: 12),
-              Card(
-                elevation: 2,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   child: Column(
                     children: [
                       _ProfileInfoTile(
                         icon: Icons.location_on_rounded,
                         label: 'Current Location',
                         value: driver.currentLocation ?? 'Not set',
-                        iconColor: Colors.red,
+                        iconColor: Colors.red.shade600,
                         valueStyle: driver.currentLocation == null
                             ? TextStyle(
                                 color: Colors.grey[500],
@@ -290,12 +307,12 @@ class DriverProfilePage extends StatelessWidget {
                               )
                             : null,
                       ),
-                      const Divider(height: 1, indent: 56),
+                      _Divider(),
                       _ProfileInfoTile(
                         icon: Icons.local_shipping_rounded,
                         label: 'Assigned Vehicle',
                         value: driver.currentVehicle ?? 'Not assigned',
-                        iconColor: Colors.orange,
+                        iconColor: Colors.orange.shade700,
                         valueStyle: driver.currentVehicle == null
                             ? TextStyle(
                                 color: Colors.grey[500],
@@ -303,14 +320,14 @@ class DriverProfilePage extends StatelessWidget {
                               )
                             : null,
                       ),
-                      const Divider(height: 1, indent: 56),
+                      _Divider(),
                       _ProfileInfoTile(
                         icon: Icons.calendar_month_rounded,
                         label: 'Member Since',
                         value: DateFormat(
                           'MMMM dd, yyyy',
                         ).format(driver.joinDate),
-                        iconColor: Colors.teal,
+                        iconColor: Colors.teal.shade600,
                       ),
                     ],
                   ),
@@ -318,19 +335,31 @@ class DriverProfilePage extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Edit Profile Button
-              FilledButton.icon(
-                onPressed: () => context.push('/driver/profile/edit'),
-                icon: const Icon(Icons.edit_rounded),
-                label: const Text(
-                  'Edit Profile',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 52),
-                  backgroundColor: Colors.orange,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () => context.push('/driver/profile/edit'),
+                  icon: const Icon(
+                    Icons.edit_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'EDIT PROFILE SETTINGS',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 4,
                   ),
                 ),
               ),
@@ -369,25 +398,30 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color, size: 22),
           ),
-          child: Icon(icon, color: color, size: 20),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
+          const SizedBox(width: 14),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              color: Color(0xFF0F172A), // Force very dark navy
+              letterSpacing: 1.2,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -412,40 +446,50 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.15), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 12),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: color,
+              color: const Color(0xFF0F172A),
+              letterSpacing: -0.5,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
+              color: Colors.grey[600],
             ),
             textAlign: TextAlign.center,
           ),
-          if (suffix != null)
-            Text(
-              suffix!,
-              style: TextStyle(fontSize: 9, color: Colors.grey[500]),
-            ),
         ],
       ),
     );
@@ -470,14 +514,14 @@ class _ProfileInfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: iconColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, size: 20, color: iconColor),
           ),
@@ -487,12 +531,12 @@ class _ProfileInfoTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
+                  label.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
-                    letterSpacing: 0.3,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[500],
+                    letterSpacing: 1.1,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -501,9 +545,10 @@ class _ProfileInfoTile extends StatelessWidget {
                   style:
                       valueStyle ??
                       const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                        letterSpacing: -0.3,
                       ),
                 ),
               ],
@@ -511,6 +556,18 @@ class _ProfileInfoTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _Divider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Divider(
+      height: 1,
+      indent: 68,
+      endIndent: 16,
+      color: Colors.grey.withValues(alpha: 0.1),
     );
   }
 }

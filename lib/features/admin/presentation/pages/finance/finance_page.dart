@@ -82,15 +82,28 @@ class FinancePage extends StatelessWidget {
                 const SizedBox(height: 32),
 
                 // Transactions Section
-                const Text(
-                  'Cash Flow Operations',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F172A),
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Cash Flow Operations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () =>
+                          context.push('/admin/finance/transactions'),
+                      child: const Text(
+                        'View All',
+                        style: TextStyle(color: Colors.blue),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 if (provider.transactions.isEmpty)
                   _buildEmptyState('No recent activity recorded.')
                 else
@@ -107,18 +120,37 @@ class FinancePage extends StatelessWidget {
                       ],
                     ),
                     padding: const EdgeInsets.all(8),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: provider.transactions.take(5).length,
-                      separatorBuilder: (context, index) => Divider(
-                        color: Colors.grey[100],
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                      itemBuilder: (context, index) => _TransactionListItem(
-                        transaction: provider.transactions[index],
-                      ),
+                    child: Column(
+                      children: [
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: provider.transactions.take(5).length,
+                          separatorBuilder: (context, index) => Divider(
+                            color: Colors.grey[100],
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+                          itemBuilder: (context, index) => _TransactionListItem(
+                            transaction: provider.transactions[index],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                context.push('/admin/finance/transactions/new'),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Record Transaction'),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 44),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 const SizedBox(height: 100),
@@ -142,6 +174,14 @@ class FinancePage extends StatelessWidget {
             icon: Icons.account_balance_rounded,
             color: Colors.green,
             trend: '+12.4%',
+          ),
+          const SizedBox(width: 16),
+          _FinanceStatCard(
+            title: 'Trip Commissions (30%)',
+            amount: provider.commissionIncome,
+            icon: Icons.pie_chart_rounded,
+            color: Colors.indigo,
+            trend: 'Direct Cut',
           ),
           const SizedBox(width: 16),
           _FinanceStatCard(
@@ -311,6 +351,7 @@ class _InvoiceListItem extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
+        onTap: () => context.push('/admin/finance/invoices'),
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -370,6 +411,7 @@ class _TransactionListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isIncome = transaction.type == TransactionType.income;
     return ListTile(
+      onTap: () => context.push('/admin/finance/transactions'),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Container(
         padding: const EdgeInsets.all(8),

@@ -99,9 +99,6 @@ class _CustomerEditFormPageState extends State<CustomerEditFormPage> {
       return;
     }
 
-    // TODO: Upload _profileImage to server and get URL
-    // For now, we'll just update the other fields
-
     final updatedCustomer = currentCustomer.copyWith(
       name: _nameController.text.trim(),
       email: _emailController.text.trim(),
@@ -120,7 +117,10 @@ class _CustomerEditFormPageState extends State<CustomerEditFormPage> {
           : _countryController.text.trim(),
     );
 
-    final success = await provider.updateCustomer(updatedCustomer);
+    final success = await provider.updateCustomer(
+      updatedCustomer,
+      image: _profileImage,
+    );
     setState(() {
       _isLoading = false;
     });
@@ -141,6 +141,15 @@ class _CustomerEditFormPageState extends State<CustomerEditFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CustomerOrderProvider>();
+    final currentCustomer = provider.currentCustomer;
+
+    if (currentCustomer == null) {
+      return const Scaffold(
+        body: Center(child: Text('Loading customer data...')),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Edit Profile'),
@@ -173,7 +182,7 @@ class _CustomerEditFormPageState extends State<CustomerEditFormPage> {
               // Profile Image Section
               Center(
                 child: ProfileImagePicker(
-                  currentImageUrl: null, // TODO: Get from customer model
+                  currentImageUrl: currentCustomer.profileImage,
                   placeholderText: _getInitials(
                     _nameController.text.isNotEmpty
                         ? _nameController.text

@@ -93,7 +93,8 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                 // Critical Alerts
                 if (provider.vehiclesNeedingMaintenance.isNotEmpty ||
                     provider.vehiclesWithExpiredInsurance.isNotEmpty ||
-                    provider.vehiclesWithExpiredLicense.isNotEmpty) ...[
+                    provider.vehiclesWithExpiredLicense.isNotEmpty ||
+                    provider.lowFuelVehicles.isNotEmpty) ...[
                   const Text(
                     'Critical Alerts',
                     style: TextStyle(
@@ -110,9 +111,7 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                           '${provider.vehiclesNeedingMaintenance.length} vehicles exceeded limit',
                       icon: Icons.warning_amber_rounded,
                       color: Colors.orange,
-                      onTap: () => context.push(
-                        '/admin/fleet/vehicles?status=maintenance_needed',
-                      ),
+                      onTap: () => context.push('/admin/fleet/maintenance'),
                     ),
                   const SizedBox(height: 12),
                   if (provider.vehiclesWithExpiredInsurance.isNotEmpty)
@@ -122,9 +121,27 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                           '${provider.vehiclesWithExpiredInsurance.length} policies expired',
                       icon: Icons.gpp_bad_rounded,
                       color: Colors.red,
-                      onTap: () => context.push(
-                        '/admin/fleet/vehicles?status=insurance_expired',
-                      ),
+                      onTap: () => context.push('/admin/fleet/vehicles'),
+                    ),
+                  const SizedBox(height: 12),
+                  if (provider.vehiclesWithExpiredLicense.isNotEmpty)
+                    _StandardAlertCard(
+                      title: 'License Compliance Issues',
+                      subtitle:
+                          '${provider.vehiclesWithExpiredLicense.length} vehicles lack valid licenses',
+                      icon: Icons.assignment_late_rounded,
+                      color: Colors.redAccent,
+                      onTap: () => context.push('/admin/fleet/vehicles'),
+                    ),
+                  const SizedBox(height: 12),
+                  if (provider.lowFuelVehicles.isNotEmpty)
+                    _StandardAlertCard(
+                      title: 'Low Fuel Warning',
+                      subtitle:
+                          '${provider.lowFuelVehicles.length} active vehicles below 15%',
+                      icon: Icons.local_gas_station_rounded,
+                      color: Colors.deepOrange,
+                      onTap: () => context.push('/admin/fleet/vehicles'),
                     ),
                   const SizedBox(height: 32),
                 ],

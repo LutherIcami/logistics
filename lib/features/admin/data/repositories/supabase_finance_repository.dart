@@ -50,6 +50,21 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<Invoice> updateInvoice(Invoice invoice) async {
+    try {
+      final response = await client
+          .from('invoices')
+          .update(invoice.toJson())
+          .eq('id', invoice.id)
+          .select()
+          .single();
+      return Invoice.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to update invoice: $e');
+    }
+  }
+
+  @override
   Future<FinancialTransaction> addTransaction(
     FinancialTransaction transaction,
   ) async {
@@ -62,6 +77,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
       return FinancialTransaction.fromJson(response);
     } catch (e) {
       throw Exception('Failed to add transaction: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteTransaction(String id) async {
+    try {
+      await client.from('financial_transactions').delete().eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete transaction: $e');
     }
   }
 }

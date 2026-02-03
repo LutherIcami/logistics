@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
+import '../features/auth/presentation/pages/forgot_password_page.dart';
 import '../features/auth/presentation/pages/reset_password_page.dart';
 import '../features/home/presentation/pages/home_page.dart';
 
@@ -13,6 +14,8 @@ import '../features/admin/presentation/pages/fleet_management/fleet_maintenance_
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicles_list_page.dart';
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_detail_page.dart';
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_form_page.dart';
+import '../features/admin/presentation/pages/fleet_management/record_fuel_log_page.dart';
+import '../features/admin/presentation/pages/fleet_management/record_maintenance_log_page.dart';
 import '../features/admin/presentation/pages/shipments/shipments_page.dart';
 import '../features/admin/presentation/pages/shipments/shipment_detail_page.dart';
 import '../features/admin/presentation/pages/shipments/shipment_form_page.dart';
@@ -23,6 +26,10 @@ import '../features/admin/presentation/pages/customers/customer_form_page.dart';
 import '../features/admin/presentation/pages/finance/finance_page.dart';
 import '../features/admin/presentation/pages/finance/invoices/invoices_list_page.dart';
 import '../features/admin/presentation/pages/finance/invoices/invoice_form_page.dart';
+import '../features/admin/presentation/pages/finance/invoices/invoice_detail_page.dart';
+import '../features/admin/presentation/pages/finance/invoices/order_selection_page.dart';
+import '../features/admin/presentation/pages/finance/transactions_list_page.dart';
+import '../features/admin/presentation/pages/finance/transaction_form_page.dart';
 import '../features/admin/presentation/pages/reports/reports_page.dart';
 import '../features/admin/presentation/pages/reports/financial_report_page.dart';
 import '../features/admin/presentation/pages/reports/shipment_analytics_page.dart';
@@ -33,10 +40,14 @@ import '../features/admin/presentation/pages/support/support_page.dart';
 import '../features/driver/presentation/pages/driver_dashboard.dart';
 import '../features/driver/presentation/pages/trips/trip_detail_page.dart';
 import '../features/driver/presentation/pages/profile/driver_edit_form_page.dart';
+import '../features/driver/presentation/pages/fleet/fuel_report_page.dart';
+import '../features/driver/presentation/pages/fleet/maintenance_report_page.dart';
 import '../features/customer/presentation/pages/customer_dashboard.dart';
 import '../features/customer/presentation/pages/orders/order_detail_page.dart';
 import '../features/customer/presentation/pages/orders/new_order_form_page.dart';
 import '../features/customer/presentation/pages/profile/customer_edit_form_page.dart';
+
+import '../features/chat/presentation/pages/chat_page.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
@@ -47,6 +58,10 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const RegisterPage(),
     ),
     GoRoute(
+      path: '/forgot-password',
+      builder: (context, state) => const ForgotPasswordPage(),
+    ),
+    GoRoute(
       path: '/reset-password',
       builder: (context, state) => const ResetPasswordPage(),
     ),
@@ -55,6 +70,13 @@ final GoRouter appRouter = GoRouter(
       path: '/admin',
       builder: (context, state) => const AdminDashboard(),
       routes: [
+        GoRoute(
+          path: 'chat/:orderId',
+          builder: (context, state) => ChatPage(
+            orderId: state.pathParameters['orderId']!,
+            currentUserRole: 'admin',
+          ),
+        ),
         GoRoute(
           path: 'drivers',
           builder: (context, state) => const DriversPage(),
@@ -86,6 +108,16 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: 'maintenance',
               builder: (context, state) => const FleetMaintenancePage(),
+              routes: [
+                GoRoute(
+                  path: 'record-fuel',
+                  builder: (context, state) => const RecordFuelLogPage(),
+                ),
+                GoRoute(
+                  path: 'record-service',
+                  builder: (context, state) => const RecordMaintenanceLogPage(),
+                ),
+              ],
             ),
             GoRoute(
               path: 'vehicles/add',
@@ -166,6 +198,25 @@ final GoRouter appRouter = GoRouter(
                   path: 'new',
                   builder: (context, state) => const InvoiceFormPage(),
                 ),
+                GoRoute(
+                  path: 'from-order',
+                  builder: (context, state) => const OrderSelectionPage(),
+                ),
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) =>
+                      InvoiceDetailPage(invoiceId: state.pathParameters['id']!),
+                ),
+              ],
+            ),
+            GoRoute(
+              path: 'transactions',
+              builder: (context, state) => const TransactionsListPage(),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (context, state) => const TransactionFormPage(),
+                ),
               ],
             ),
           ],
@@ -216,8 +267,23 @@ final GoRouter appRouter = GoRouter(
               TripDetailPage(tripId: state.pathParameters['id']!),
         ),
         GoRoute(
+          path: 'chat/:orderId',
+          builder: (context, state) => ChatPage(
+            orderId: state.pathParameters['orderId']!,
+            currentUserRole: 'driver',
+          ),
+        ),
+        GoRoute(
           path: 'profile/edit',
           builder: (context, state) => const DriverEditFormPage(),
+        ),
+        GoRoute(
+          path: 'fuel-report',
+          builder: (context, state) => const FuelReportPage(),
+        ),
+        GoRoute(
+          path: 'maintenance-report',
+          builder: (context, state) => const MaintenanceReportPage(),
         ),
       ],
     ),
@@ -233,6 +299,13 @@ final GoRouter appRouter = GoRouter(
           path: 'orders/:id',
           builder: (context, state) =>
               OrderDetailPage(orderId: state.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: 'chat/:orderId',
+          builder: (context, state) => ChatPage(
+            orderId: state.pathParameters['orderId']!,
+            currentUserRole: 'customer',
+          ),
         ),
         GoRoute(
           path: 'profile/edit',

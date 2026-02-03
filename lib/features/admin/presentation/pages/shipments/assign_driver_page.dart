@@ -303,7 +303,7 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
           Icons.person_search_rounded,
           'Select Driver',
         ),
-        value: _selectedDriver,
+        initialValue: _selectedDriver,
         items: drivers.map((driver) {
           final shortId = driver.id.length > 8
               ? driver.id.substring(0, 8)
@@ -345,7 +345,7 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
           Icons.local_shipping_rounded,
           'Select Unit',
         ),
-        value: _selectedVehicle,
+        initialValue: _selectedVehicle,
         items: vehicles.map((vehicle) {
           return DropdownMenuItem(
             value: vehicle,

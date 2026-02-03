@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import '../../domain/models/vehicle_model.dart';
+import '../../domain/models/fleet_models.dart';
 import 'vehicle_repository.dart';
 
 class SupabaseVehicleRepository implements VehicleRepository {
@@ -135,6 +136,64 @@ class SupabaseVehicleRepository implements VehicleRepository {
       return imageUrls;
     } catch (e) {
       throw Exception('Failed to upload vehicle images: $e');
+    }
+  }
+
+  @override
+  Future<List<FuelLog>> getFuelLogs({String? vehicleId}) async {
+    try {
+      var query = client.from('fuel_logs').select();
+      if (vehicleId != null) {
+        query = query.eq('vehicle_id', vehicleId);
+      }
+      final response = await query.order('date', ascending: false);
+      return (response as List).map((json) => FuelLog.fromJson(json)).toList();
+    } catch (e) {
+      throw Exception('Failed to fetch fuel logs: $e');
+    }
+  }
+
+  @override
+  Future<FuelLog> addFuelLog(FuelLog log) async {
+    try {
+      final response = await client
+          .from('fuel_logs')
+          .insert(log.toJson())
+          .select()
+          .single();
+      return FuelLog.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to add fuel log: $e');
+    }
+  }
+
+  @override
+  Future<List<MaintenanceLog>> getMaintenanceLogs({String? vehicleId}) async {
+    try {
+      var query = client.from('maintenance_logs').select();
+      if (vehicleId != null) {
+        query = query.eq('vehicle_id', vehicleId);
+      }
+      final response = await query.order('date', ascending: false);
+      return (response as List)
+          .map((json) => MaintenanceLog.fromJson(json))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch maintenance logs: $e');
+    }
+  }
+
+  @override
+  Future<MaintenanceLog> addMaintenanceLog(MaintenanceLog log) async {
+    try {
+      final response = await client
+          .from('maintenance_logs')
+          .insert(log.toJson())
+          .select()
+          .single();
+      return MaintenanceLog.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to add maintenance log: $e');
     }
   }
 }
