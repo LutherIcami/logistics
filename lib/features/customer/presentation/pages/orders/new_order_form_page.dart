@@ -47,7 +47,7 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
           await provider.initializeCustomer(authProvider.user!.id);
         }
       } catch (e) {
-        print('DEBUG: Failed to initialize customer: $e');
+        debugPrint('DEBUG: Failed to initialize customer: $e');
         // If auth provider is not available, you might want to show a login prompt
       }
     }
@@ -93,10 +93,10 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
     final customer = provider.currentCustomer;
 
     // Debug: Print customer status
-    print('DEBUG: Customer is null: ${customer == null}');
-    print('DEBUG: Customer ID: ${customer?.id}');
-    print('DEBUG: Customer name: ${customer?.name}');
-    print('DEBUG: Provider error: ${provider.error}');
+    debugPrint('DEBUG: Customer is null: ${customer == null}');
+    debugPrint('DEBUG: Customer ID: ${customer?.id}');
+    debugPrint('DEBUG: Customer name: ${customer?.name}');
+    debugPrint('DEBUG: Provider error: ${provider.error}');
 
     if (customer == null) {
       setState(() {
@@ -159,7 +159,7 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
         context.pop();
       } else {
         final errorMessage = provider.error ?? 'Failed to create order';
-        print('DEBUG: Order creation failed: $errorMessage');
+        debugPrint('DEBUG: Order creation failed: $errorMessage');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),

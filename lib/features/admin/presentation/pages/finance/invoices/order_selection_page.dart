@@ -66,7 +66,7 @@ class _OrderSelectionPageState extends State<OrderSelectionPage> {
           .map((json) => Order.fromJson(json))
           .toList();
 
-      // Get invoiced order IDs from provider
+      if (!mounted) return;
       final financeProvider = context.read<FinanceProvider>();
       final invoicedIds = financeProvider.invoices
           .where((inv) => inv.orderId != null)

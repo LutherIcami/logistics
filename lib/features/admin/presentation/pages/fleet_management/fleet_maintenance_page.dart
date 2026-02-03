@@ -23,7 +23,11 @@ class _FleetMaintenancePageState extends State<FleetMaintenancePage>
     _tabController.addListener(() {
       if (mounted) setState(() {});
     });
-    Future.microtask(() => context.read<VehicleProvider>().loadLogs());
+    Future.microtask(() {
+      if (mounted) {
+        context.read<VehicleProvider>().loadLogs();
+      }
+    });
   }
 
   @override

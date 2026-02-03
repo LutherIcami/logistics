@@ -759,7 +759,7 @@ class _DriverDashboardState extends State<DriverDashboard> {
               if (await canLaunchUrl(launchUri)) {
                 await launchUrl(launchUri);
               } else {
-                if (context.mounted) {
+                if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Cannot launch dialer')),
                   );

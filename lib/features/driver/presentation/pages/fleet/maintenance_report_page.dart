@@ -133,7 +133,7 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -157,7 +157,7 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
                           Text(
                             '${vehicle.make} ${vehicle.model}',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 14,
                             ),
                           ),

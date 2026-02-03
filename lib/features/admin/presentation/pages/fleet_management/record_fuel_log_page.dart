@@ -211,7 +211,7 @@ class _RecordFuelLogPageState extends State<RecordFuelLogPage> {
   Widget _buildVehicleDropdown(List<Vehicle> vehicles) {
     return DropdownButtonFormField<Vehicle>(
       decoration: _inputDecoration(Icons.local_shipping, 'Select Vehicle'),
-      value: _selectedVehicle,
+      initialValue: _selectedVehicle,
       items: vehicles
           .map(
             (v) => DropdownMenuItem(
@@ -235,7 +235,7 @@ class _RecordFuelLogPageState extends State<RecordFuelLogPage> {
   Widget _buildDriverDropdown(List<Driver> drivers) {
     return DropdownButtonFormField<Driver>(
       decoration: _inputDecoration(Icons.person, 'Filled By / Driver'),
-      value: _selectedDriver,
+      initialValue: _selectedDriver,
       items: drivers
           .map(
             (d) => DropdownMenuItem(

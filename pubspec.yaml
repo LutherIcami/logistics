@@ -52,6 +52,7 @@ dependencies:
   pdf: ^3.11.1
   printing: ^5.13.2
   open_file_plus: ^3.4.1
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

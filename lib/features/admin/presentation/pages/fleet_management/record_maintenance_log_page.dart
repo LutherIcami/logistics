@@ -259,7 +259,7 @@ class _RecordMaintenanceLogPageState extends State<RecordMaintenanceLogPage> {
   Widget _buildVehicleDropdown(List<Vehicle> vehicles) {
     return DropdownButtonFormField<Vehicle>(
       decoration: _inputDecoration(Icons.local_shipping, 'Select Vehicle'),
-      value: _selectedVehicle,
+      initialValue: _selectedVehicle,
       items: vehicles
           .map(
             (v) => DropdownMenuItem(
@@ -283,7 +283,7 @@ class _RecordMaintenanceLogPageState extends State<RecordMaintenanceLogPage> {
   Widget _buildDriverDropdown(List<Driver> drivers) {
     return DropdownButtonFormField<Driver>(
       decoration: _inputDecoration(Icons.person, 'Performed By / Driver'),
-      value: _selectedDriver,
+      initialValue: _selectedDriver,
       items: drivers
           .map(
             (d) => DropdownMenuItem(
@@ -300,7 +300,7 @@ class _RecordMaintenanceLogPageState extends State<RecordMaintenanceLogPage> {
   Widget _buildTypeDropdown() {
     return DropdownButtonFormField<MaintenanceType>(
       decoration: _inputDecoration(Icons.category, 'Maintenance Type'),
-      value: _selectedType,
+      initialValue: _selectedType,
       items: MaintenanceType.values
           .map(
             (t) =>

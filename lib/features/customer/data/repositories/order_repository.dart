@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import '../../domain/models/order_model.dart';
 
 /// Abstract contract for order data access.
@@ -106,7 +107,7 @@ class MockOrderRepository implements OrderRepository {
       );
     }).toList()..sort((a, b) => b.orderDate.compareTo(a.orderDate));
 
-    print(
+    debugPrint(
       'DEBUG MockRepo: Returning ${ordersForCustomer.length} orders for customer $customerId',
     );
     return ordersForCustomer;

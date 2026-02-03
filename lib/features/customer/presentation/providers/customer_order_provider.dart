@@ -130,20 +130,20 @@ class CustomerOrderProvider extends ChangeNotifier {
       _orders = await _orderRepository.getOrdersByCustomerId(
         _currentCustomerId!,
       );
-      print(
+      debugPrint(
         'DEBUG: Loaded ${_orders.length} orders for customer $_currentCustomerId',
       );
-      print('DEBUG: Pending orders: ${pendingOrders.length}');
-      print('DEBUG: Active orders: ${activeOrders.length}');
-      print('DEBUG: Completed orders: ${completedOrders.length}');
+      debugPrint('DEBUG: Pending orders: ${pendingOrders.length}');
+      debugPrint('DEBUG: Active orders: ${activeOrders.length}');
+      debugPrint('DEBUG: Completed orders: ${completedOrders.length}');
       if (_orders.isNotEmpty) {
-        print(
+        debugPrint(
           'DEBUG: First order ID: ${_orders.first.id}, Status: ${_orders.first.status}',
         );
       }
       _error = null;
     } catch (e) {
-      print('DEBUG: Error loading orders: $e');
+      debugPrint('DEBUG: Error loading orders: $e');
       _error = 'Failed to load orders';
     } finally {
       _setLoading(false);
@@ -160,18 +160,20 @@ class CustomerOrderProvider extends ChangeNotifier {
 
   Future<bool> createOrder(Order order) async {
     try {
-      print('DEBUG: Creating order with ID: ${order.id}');
-      print('DEBUG: Customer ID: ${order.customerId}');
-      print('DEBUG: Order data: ${order.toJson()}');
+      debugPrint('DEBUG: Creating order with ID: ${order.id}');
+      debugPrint('DEBUG: Customer ID: ${order.customerId}');
+      debugPrint('DEBUG: Order data: ${order.toJson()}');
 
       final newOrder = await _orderRepository.createOrder(order);
       _orders.insert(0, newOrder);
       _error = null;
       notifyListeners();
-      print('DEBUG: Order created successfully with new ID: ${newOrder.id}');
+      debugPrint(
+        'DEBUG: Order created successfully with new ID: ${newOrder.id}',
+      );
       return true;
     } catch (e) {
-      print('DEBUG: Order creation error: $e');
+      debugPrint('DEBUG: Order creation error: $e');
       _error = 'Failed to create order: ${e.toString()}';
       notifyListeners();
       return false;

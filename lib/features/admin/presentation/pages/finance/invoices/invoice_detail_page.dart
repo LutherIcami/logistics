@@ -189,11 +189,13 @@ class InvoiceDetailPage extends StatelessWidget {
                 // Header Card
                 Card(
                   elevation: 0,
-                  color: _getStatusColor(invoice.status).withOpacity(0.1),
+                  color: _getStatusColor(invoice.status).withValues(alpha: 0.1),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                     side: BorderSide(
-                      color: _getStatusColor(invoice.status).withOpacity(0.3),
+                      color: _getStatusColor(
+                        invoice.status,
+                      ).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Padding(

@@ -28,7 +28,8 @@ class FinanceProvider extends ChangeNotifier {
   double get commissionIncome => _transactions
       .where(
         (t) =>
-            t.category == 'commission' || t.description.contains('Commission'),
+            t.category?.name == 'commission' ||
+            t.description.contains('Commission'),
       )
       .fold(0, (sum, t) => sum + t.amount);
 

@@ -113,7 +113,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: Colors.grey.withOpacity(0.1)),
+                side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(8),
@@ -195,7 +195,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
               children: [
                 if (_type == TransactionType.expense) ...[
                   DropdownButtonFormField<ExpenseCategory>(
-                    value: _category,
+                    initialValue: _category,
                     decoration: InputDecoration(
                       labelText: 'Expense Category',
                       prefixIcon: const Icon(Icons.category_outlined),
@@ -273,7 +273,7 @@ class _TransactionFormPageState extends State<TransactionFormPage> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

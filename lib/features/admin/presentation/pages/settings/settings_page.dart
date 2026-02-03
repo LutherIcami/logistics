@@ -316,24 +316,26 @@ class _SettingsPageState extends State<SettingsPage> {
             'Display Language',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: languages
-                .map(
-                  (lang) => RadioListTile<String>(
-                    title: Text(lang, style: const TextStyle(fontSize: 15)),
-                    value: lang,
-                    groupValue: provider.language,
-                    activeColor: Colors.blue,
-                    onChanged: (String? value) {
-                      if (value != null) {
-                        provider.setLanguage(value);
-                        Navigator.pop(context);
-                      }
-                    },
-                  ),
-                )
-                .toList(),
+          content: RadioGroup<String>(
+            groupValue: provider.language,
+            onChanged: (String? value) {
+              if (value != null) {
+                provider.setLanguage(value);
+                Navigator.pop(context);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: languages
+                  .map(
+                    (lang) => RadioListTile<String>(
+                      title: Text(lang, style: const TextStyle(fontSize: 15)),
+                      value: lang,
+                      activeColor: Colors.blue,
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
         );
       },
