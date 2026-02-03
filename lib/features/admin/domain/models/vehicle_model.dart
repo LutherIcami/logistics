@@ -57,64 +57,77 @@ class Vehicle {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'registrationNumber': registrationNumber,
+      'registration_number': registrationNumber,
       'make': make,
       'model': model,
       'year': year,
       'type': type,
       'status': status,
-      if (assignedDriverId != null) 'assignedDriverId': assignedDriverId,
-      if (assignedDriverName != null) 'assignedDriverName': assignedDriverName,
-      'fuelCapacity': fuelCapacity,
-      'currentFuelLevel': currentFuelLevel,
+      if (assignedDriverId != null) 'assigned_driver_id': assignedDriverId,
+      if (assignedDriverName != null)
+        'assigned_driver_name': assignedDriverName,
+      'fuel_capacity': fuelCapacity,
+      'current_fuel_level': currentFuelLevel,
       'mileage': mileage,
-      'purchaseDate': purchaseDate.toIso8601String(),
+      'purchase_date': purchaseDate.toIso8601String(),
       if (lastMaintenanceDate != null)
-        'lastMaintenanceDate': lastMaintenanceDate!.toIso8601String(),
+        'last_maintenance_date': lastMaintenanceDate!.toIso8601String(),
       if (nextMaintenanceDate != null)
-        'nextMaintenanceDate': nextMaintenanceDate!.toIso8601String(),
-      if (currentLocation != null) 'currentLocation': currentLocation,
-      if (loadCapacity != null) 'loadCapacity': loadCapacity,
-      if (insuranceExpiry != null) 'insuranceExpiry': insuranceExpiry,
-      if (licenseExpiry != null) 'licenseExpiry': licenseExpiry,
-      if (purchasePrice != null) 'purchasePrice': purchasePrice,
-      if (currentValue != null) 'currentValue': currentValue,
+        'next_maintenance_date': nextMaintenanceDate!.toIso8601String(),
+      if (currentLocation != null) 'current_location': currentLocation,
+      if (loadCapacity != null) 'load_capacity': loadCapacity,
+      if (insuranceExpiry != null) 'insurance_expiry': insuranceExpiry,
+      if (licenseExpiry != null) 'license_expiry': licenseExpiry,
+      if (purchasePrice != null) 'purchase_price': purchasePrice,
+      if (currentValue != null) 'current_value': currentValue,
       'images': images,
       if (specifications != null) 'specifications': specifications,
-      if (additionalInfo != null) 'additionalInfo': additionalInfo,
+      if (additionalInfo != null) 'additional_info': additionalInfo,
     };
   }
 
   factory Vehicle.fromJson(Map<String, dynamic> json) {
     return Vehicle(
       id: json['id'],
-      registrationNumber: json['registrationNumber'],
+      registrationNumber:
+          json['registration_number'] ??
+          json['registrationNumber'], // Fallback for old data
       make: json['make'],
       model: json['model'],
       year: json['year'],
       type: json['type'] ?? 'truck',
       status: json['status'] ?? 'active',
-      assignedDriverId: json['assignedDriverId'],
-      assignedDriverName: json['assignedDriverName'],
-      fuelCapacity: json['fuelCapacity']?.toDouble() ?? 0.0,
-      currentFuelLevel: json['currentFuelLevel']?.toDouble() ?? 0.0,
-      mileage: json['mileage']?.toDouble() ?? 0.0,
-      purchaseDate: DateTime.parse(json['purchaseDate']),
-      lastMaintenanceDate: json['lastMaintenanceDate'] != null
-          ? DateTime.parse(json['lastMaintenanceDate'])
+      assignedDriverId: json['assigned_driver_id'] ?? json['assignedDriverId'],
+      assignedDriverName:
+          json['assigned_driver_name'] ?? json['assignedDriverName'],
+      fuelCapacity:
+          (json['fuel_capacity'] ?? json['fuelCapacity'])?.toDouble() ?? 0.0,
+      currentFuelLevel:
+          (json['current_fuel_level'] ?? json['currentFuelLevel'])
+              ?.toDouble() ??
+          0.0,
+      mileage: (json['mileage'])?.toDouble() ?? 0.0,
+      purchaseDate: DateTime.parse(
+        json['purchase_date'] ??
+            json['purchaseDate'] ??
+            DateTime.now().toIso8601String(),
+      ),
+      lastMaintenanceDate: json['last_maintenance_date'] != null
+          ? DateTime.parse(json['last_maintenance_date'])
           : null,
-      nextMaintenanceDate: json['nextMaintenanceDate'] != null
-          ? DateTime.parse(json['nextMaintenanceDate'])
+      nextMaintenanceDate: json['next_maintenance_date'] != null
+          ? DateTime.parse(json['next_maintenance_date'])
           : null,
-      currentLocation: json['currentLocation'],
-      loadCapacity: json['loadCapacity']?.toDouble(),
-      insuranceExpiry: json['insuranceExpiry'],
-      licenseExpiry: json['licenseExpiry'],
-      purchasePrice: json['purchasePrice']?.toDouble(),
-      currentValue: json['currentValue']?.toDouble(),
+      currentLocation: json['current_location'] ?? json['currentLocation'],
+      loadCapacity: (json['load_capacity'] ?? json['loadCapacity'])?.toDouble(),
+      insuranceExpiry: json['insurance_expiry'] ?? json['insuranceExpiry'],
+      licenseExpiry: json['license_expiry'] ?? json['licenseExpiry'],
+      purchasePrice: (json['purchase_price'] ?? json['purchasePrice'])
+          ?.toDouble(),
+      currentValue: (json['current_value'] ?? json['currentValue'])?.toDouble(),
       images: json['images'] != null ? List<String>.from(json['images']) : [],
       specifications: json['specifications'],
-      additionalInfo: json['additionalInfo'],
+      additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
 

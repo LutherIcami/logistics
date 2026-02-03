@@ -46,6 +46,7 @@ dependencies:
   url_launcher: ^6.2.5
   image_picker: ^1.0.7
   supabase_flutter: ^2.6.0  
+  uuid: ^4.5.2
 
 
 dev_dependencies:

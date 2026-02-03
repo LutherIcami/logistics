@@ -93,52 +93,77 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
       title: 'Assign Driver',
       backRoute: '/admin/shipments/${widget.shipmentId}',
       child: Consumer3<ShipmentProvider, DriverProvider, VehicleProvider>(
-        builder:
-            (context, shipmentProvider, driverProvider, vehicleProvider, _) {
-              final shipment = shipmentProvider.getShipmentById(
-                widget.shipmentId,
-              );
+        builder: (context, shipmentProvider, driverProvider, vehicleProvider, _) {
+          final shipment = shipmentProvider.getShipmentById(widget.shipmentId);
 
-              if (shipment == null) {
-                return const Center(
-                  child: Text('Shipment record lost in terminal'),
-                );
-              }
+          if (shipment == null) {
+            return const Center(
+              child: Text('Shipment record lost in terminal'),
+            );
+          }
 
-              if (driverProvider.isLoading || vehicleProvider.isLoading) {
-                return const Center(child: CircularProgressIndicator());
-              }
+          if (shipment.driverId != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 64,
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'SHIPMENT ALREADY DEPLOYED',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Assigned to: ${shipment.driverName}'),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => context.pop(),
+                    child: const Text('Return to Tactical View'),
+                  ),
+                ],
+              ),
+            );
+          }
 
-              final availableDrivers = driverProvider.drivers
-                  .where((d) => d.status == 'active')
-                  .toList();
-              final availableVehicles = vehicleProvider.vehicles
-                  .where((v) => v.status == 'active')
-                  .toList();
+          if (driverProvider.isLoading || vehicleProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('MISSION BRIEF'),
-                    _buildShipmentSummary(shipment),
-                    const SizedBox(height: 32),
+          // Filter out drivers on leave - active and inactive drivers can be assigned
+          final availableDrivers = driverProvider.drivers
+              .where((d) => d.status != 'on_leave')
+              .toList();
+          final availableVehicles = vehicleProvider.vehicles
+              .where((v) => v.status == 'active')
+              .toList();
 
-                    _buildSectionTitle('PERSONNEL ASSIGNMENT'),
-                    _buildDriverDropdown(availableDrivers, availableVehicles),
-                    const SizedBox(height: 24),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle('MISSION BRIEF'),
+                _buildShipmentSummary(shipment),
+                const SizedBox(height: 32),
 
-                    _buildSectionTitle('ASSET DEPLOYMENT'),
-                    _buildVehicleDropdown(availableVehicles),
-                    const SizedBox(height: 48),
+                _buildSectionTitle('PERSONNEL ASSIGNMENT'),
+                _buildDriverDropdown(availableDrivers, availableVehicles),
+                const SizedBox(height: 24),
 
-                    _buildDeployButton(),
-                    const SizedBox(height: 60),
-                  ],
-                ),
-              );
-            },
+                _buildSectionTitle('ASSET DEPLOYMENT'),
+                _buildVehicleDropdown(availableVehicles),
+                const SizedBox(height: 48),
+
+                _buildDeployButton(),
+                const SizedBox(height: 60),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -266,22 +291,29 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
   Widget _buildDriverDropdown(List<Driver> drivers, List<Vehicle> vehicles) {
     if (drivers.isEmpty) {
       return const _ErrorContainer(
-        message: 'No active drivers found in roster',
+        message: 'No available drivers (all drivers are on leave)',
       );
     }
 
     return Container(
       decoration: _dropdownDecoration(),
       child: DropdownButtonFormField<Driver>(
+        isExpanded: true,
         decoration: _inputDecoration(
           Icons.person_search_rounded,
           'Select Driver',
         ),
         value: _selectedDriver,
         items: drivers.map((driver) {
+          final shortId = driver.id.length > 8
+              ? driver.id.substring(0, 8)
+              : driver.id;
           return DropdownMenuItem(
             value: driver,
-            child: Text('${driver.name} • ${driver.id}'),
+            child: Text(
+              '${driver.name} • $shortId',
+              overflow: TextOverflow.ellipsis,
+            ),
           );
         }).toList(),
         onChanged: (value) {
@@ -308,6 +340,7 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
     return Container(
       decoration: _dropdownDecoration(),
       child: DropdownButtonFormField<Vehicle>(
+        isExpanded: true,
         decoration: _inputDecoration(
           Icons.local_shipping_rounded,
           'Select Unit',
@@ -318,6 +351,7 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
             value: vehicle,
             child: Text(
               '${vehicle.registrationNumber} • ${vehicle.make} ${vehicle.model}',
+              overflow: TextOverflow.ellipsis,
             ),
           );
         }).toList(),
@@ -400,12 +434,14 @@ class _ErrorContainer extends StatelessWidget {
             size: 20,
           ),
           const SizedBox(width: 12),
-          Text(
-            message,
-            style: const TextStyle(
-              color: Colors.redAccent,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

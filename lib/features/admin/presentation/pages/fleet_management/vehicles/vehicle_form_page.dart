@@ -92,6 +92,25 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
     super.dispose();
   }
 
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      // Format as YYYY-MM-DD
+      setState(() {
+        controller.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
   Future<void> _saveVehicle() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -183,17 +202,47 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
           );
           context.go('/admin/fleet');
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(provider.error ?? 'Failed to save vehicle')),
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Save Failed'),
+              content: SingleChildScrollView(
+                child: Text(
+                  provider.error ?? 'Unknown error occurred',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving vehicle: $e')));
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Failed to Save Vehicle'),
+            content: SingleChildScrollView(
+              child: Text(
+                'System Error: ${e.toString()}\n\nPlease check:\n1. You are logged in as Admin\n2. Database migration (repair_vehicles.sql) was run',
+                style: const TextStyle(color: Colors.red),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
       }
     }
   }
@@ -216,331 +265,453 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
             ),
           )
         else
-          IconButton(icon: const Icon(Icons.check), onPressed: _saveVehicle),
+          FilledButton.icon(
+            onPressed: _saveVehicle,
+            icon: const Icon(Icons.check),
+            label: const Text('Save'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white.withOpacity(0.2),
+              foregroundColor: Colors.white,
+            ),
+          ),
       ],
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Vehicle Photos Section
-              VehicleImagePicker(
-                vehiclePlate: _registrationController.text.isNotEmpty
-                    ? _registrationController.text
-                    : 'New Vehicle',
-                currentImageUrls: _existingImageUrls,
-                maxImages: 4,
-                onImagesSelected: (images) {
-                  setState(() {
-                    _vehicleImages = images;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
+      child: Container(
+        color: Colors.grey[50], // Light grey background for the whole page
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Vehicle Photos Section
+                _buildSection(
+                  title: 'Vehicle Photos',
+                  children: [
+                    VehicleImagePicker(
+                      vehiclePlate: _registrationController.text.isNotEmpty
+                          ? _registrationController.text
+                          : 'New Vehicle',
+                      currentImageUrls: _existingImageUrls,
+                      maxImages: 4,
+                      onImagesSelected: (images) {
+                        setState(() {
+                          _vehicleImages = images;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
-              // Basic Information
-              Text(
-                'Basic Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _registrationController,
-                label: 'Registration Number',
-                icon: Icons.badge,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter registration number';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _makeController,
-                      label: 'Make',
-                      icon: Icons.build,
+                // Basic Information
+                _buildSection(
+                  title: 'Basic Information',
+                  children: [
+                    _buildTextField(
+                      controller: _registrationController,
+                      label: 'Registration Number',
+                      icon: Icons.badge,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Please enter make';
+                          return 'Please enter registration number';
                         }
                         return null;
                       },
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _modelController,
-                      label: 'Model',
-                      icon: Icons.directions_car,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter model';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _yearController,
-                      label: 'Year',
-                      icon: Icons.calendar_today,
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter year';
-                        }
-                        final year = int.tryParse(value);
-                        if (year == null ||
-                            year < 1900 ||
-                            year > DateTime.now().year + 1) {
-                          return 'Please enter a valid year';
-                        }
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _type,
-                      decoration: InputDecoration(
-                        labelText: 'Type',
-                        prefixIcon: const Icon(Icons.category),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _makeController,
+                            label: 'Make',
+                            icon: Icons.build,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter make';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'truck', child: Text('Truck')),
-                        DropdownMenuItem(value: 'van', child: Text('Van')),
-                        DropdownMenuItem(
-                          value: 'pickup',
-                          child: Text('Pickup'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'trailer',
-                          child: Text('Trailer'),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _modelController,
+                            label: 'Model',
+                            icon: Icons.directions_car,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter model';
+                              }
+                              return null;
+                            },
+                          ),
                         ),
                       ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _type = value;
-                          });
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select a type';
-                        }
-                        return null;
-                      },
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _status,
-                decoration: InputDecoration(
-                  labelText: 'Status',
-                  prefixIcon: const Icon(Icons.info),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _yearController,
+                            label: 'Year',
+                            icon: Icons.calendar_today,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter year';
+                              }
+                              final year = int.tryParse(value);
+                              if (year == null ||
+                                  year < 1900 ||
+                                  year > DateTime.now().year + 1) {
+                                return 'Please enter a valid year';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: _type,
+                            decoration: _inputDecoration(
+                              label: 'Type',
+                              icon: Icons.category,
+                            ),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'truck',
+                                child: Text('Truck'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'van',
+                                child: Text('Van'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'pickup',
+                                child: Text('Pickup'),
+                              ),
+                              DropdownMenuItem(
+                                value: 'trailer',
+                                child: Text('Trailer'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _type = value;
+                                });
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please select a type';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (widget.isEdit) ...[
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        initialValue: _status,
+                        decoration: _inputDecoration(
+                          label: 'Status',
+                          icon: Icons.info,
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'active',
+                            child: Text('Active'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'maintenance',
+                            child: Text('In Maintenance'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'inactive',
+                            child: Text('Inactive'),
+                          ),
+                          DropdownMenuItem(value: 'sold', child: Text('Sold')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _status = value;
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ],
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'active', child: Text('Active')),
-                  DropdownMenuItem(
-                    value: 'maintenance',
-                    child: Text('In Maintenance'),
-                  ),
-                  DropdownMenuItem(value: 'inactive', child: Text('Inactive')),
-                  DropdownMenuItem(value: 'sold', child: Text('Sold')),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      _status = value;
-                    });
-                  }
-                },
-              ),
-              const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-              // Operational Information
-              Text(
-                'Operational Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _fuelCapacityController,
-                      label: 'Fuel Capacity (L)',
-                      icon: Icons.local_gas_station,
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter fuel capacity';
-                        }
-                        final capacity = double.tryParse(value);
-                        if (capacity == null || capacity <= 0) {
-                          return 'Please enter a valid capacity';
-                        }
-                        return null;
-                      },
+                // Operational Information
+                _buildSection(
+                  title: 'Operational Information',
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _fuelCapacityController,
+                            label: 'Fuel Capacity (L)',
+                            icon: Icons.local_gas_station,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.trim().isEmpty) {
+                                return 'Please enter fuel capacity';
+                              }
+                              final capacity = double.tryParse(value);
+                              if (capacity == null || capacity <= 0) {
+                                return 'Please enter a valid capacity';
+                              }
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _currentFuelController,
+                            label: 'Current Fuel (L)',
+                            icon: Icons.local_gas_station,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _currentFuelController,
-                      label: 'Current Fuel (L)',
-                      icon: Icons.local_gas_station,
-                      keyboardType: TextInputType.number,
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _mileageController,
+                            label: 'Mileage (km)',
+                            icon: Icons.speed,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _loadCapacityController,
+                            label: 'Load Capacity (tons)',
+                            icon: Icons.scale,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _mileageController,
-                      label: 'Mileage (km)',
-                      icon: Icons.speed,
-                      keyboardType: TextInputType.number,
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _locationController,
+                      label: 'Current Location',
+                      icon: Icons.location_on,
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _loadCapacityController,
-                      label: 'Load Capacity (tons)',
-                      icon: Icons.scale,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _buildTextField(
-                controller: _locationController,
-                label: 'Current Location',
-                icon: Icons.location_on,
-              ),
-              const SizedBox(height: 24),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
-              // Financial Information
-              Text(
-                'Financial Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _purchasePriceController,
-                      label: 'Purchase Price (KES)',
-                      icon: Icons.attach_money,
-                      keyboardType: TextInputType.number,
+                // Financial Information
+                _buildSection(
+                  title: 'Financial Information',
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _purchasePriceController,
+                            label: 'Purchase Price (KES)',
+                            icon: Icons.attach_money,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _currentValueController,
+                            label: 'Current Value (KES)',
+                            icon: Icons.trending_up,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _currentValueController,
-                      label: 'Current Value (KES)',
-                      icon: Icons.trending_up,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
-              // Compliance Information
-              Text(
-                'Compliance Information',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _insuranceExpiryController,
-                      label: 'Insurance Expiry',
-                      icon: Icons.security,
-                      hintText: 'YYYY-MM-DD',
+                // Compliance Information
+                _buildSection(
+                  title: 'Compliance Information',
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _insuranceExpiryController,
+                            label: 'Insurance Expiry',
+                            icon: Icons.security,
+                            hintText: 'YYYY-MM-DD',
+                            readOnly: true,
+                            onTap: () => _selectDate(
+                              context,
+                              _insuranceExpiryController,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _licenseExpiryController,
+                            label: 'License Expiry',
+                            icon: Icons.badge,
+                            hintText: 'YYYY-MM-DD',
+                            readOnly: true,
+                            onTap: () =>
+                                _selectDate(context, _licenseExpiryController),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTextField(
-                      controller: _licenseExpiryController,
-                      label: 'License Expiry',
-                      icon: Icons.badge,
-                      hintText: 'YYYY-MM-DD',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
+                  ],
+                ),
+                const SizedBox(height: 32),
 
-              // Save Button
-              FilledButton.icon(
-                onPressed: _isLoading ? null : _saveVehicle,
-                icon: const Icon(Icons.save),
-                label: const Text('Save Vehicle'),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
-                  backgroundColor: Colors.blue,
+                // Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton.icon(
+                    onPressed: _isLoading ? null : _saveVehicle,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF0F172A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Icon(
+                            widget.isEdit
+                                ? Icons.save_rounded
+                                : Icons.add_circle_rounded,
+                          ),
+                    label: Text(
+                      widget.isEdit ? 'Update Vehicle' : 'Add Vehicle to Fleet',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required String title,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () => context.pop(),
-                icon: const Icon(Icons.cancel),
-                label: const Text('Cancel'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 48),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 24),
+          ...children,
+        ],
       ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+    String? hintText,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon, color: Colors.blue[700]),
+      labelStyle: const TextStyle(
+        color: Colors.black54,
+        fontWeight: FontWeight.w500,
+      ),
+      floatingLabelStyle: const TextStyle(
+        color: Colors.blueAccent,
+        fontWeight: FontWeight.bold,
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey[300]!, width: 1.5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+      ),
+      filled: true,
+      fillColor:
+          Colors.grey[50], // Very slight grey input background for structure
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
@@ -551,18 +722,20 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
     TextInputType? keyboardType,
     String? hintText,
     String? Function(String?)? validator,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
+      readOnly: readOnly,
+      onTap: onTap,
+      style: const TextStyle(fontWeight: FontWeight.w500),
+      decoration: _inputDecoration(
+        label: label,
+        icon: icon,
         hintText: hintText,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        filled: true,
-        fillColor: Colors.grey[50],
       ),
     );
   }

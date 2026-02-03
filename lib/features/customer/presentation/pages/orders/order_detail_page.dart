@@ -100,7 +100,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                               const SizedBox(height: 12),
                               Row(
                                 children: [
-                                  Icon(Icons.qr_code, size: 16, color: Colors.grey[600]),
+                                  Icon(
+                                    Icons.qr_code,
+                                    size: 16,
+                                    color: Colors.grey[600],
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Tracking: ${order.trackingNumber!}',
@@ -135,9 +139,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 // Order Information
                 Text(
                   'Order Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -149,13 +153,17 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         const Divider(),
                         _InfoRow(
                           label: 'Order Date',
-                          value: DateFormat('MMM dd, yyyy • hh:mm a').format(order.orderDate),
+                          value: DateFormat(
+                            'MMM dd, yyyy • hh:mm a',
+                          ).format(order.orderDate),
                         ),
                         if (order.estimatedDelivery != null) ...[
                           const Divider(),
                           _InfoRow(
                             label: 'Estimated Delivery',
-                            value: DateFormat('MMM dd, yyyy • hh:mm a').format(order.estimatedDelivery!),
+                            value: DateFormat(
+                              'MMM dd, yyyy • hh:mm a',
+                            ).format(order.estimatedDelivery!),
                           ),
                         ],
                       ],
@@ -167,9 +175,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 // Route Information
                 Text(
                   'Route Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -185,7 +193,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                                 color: Colors.blue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.location_on, color: Colors.blue),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.blue,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -220,7 +231,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                                 color: Colors.green.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.location_on, color: Colors.green),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.green,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -279,9 +293,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 // Cargo & Driver Information
                 Text(
                   'Cargo & Driver Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -293,7 +307,8 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         if (order.cargoWeight != null)
                           _InfoRow(
                             label: 'Weight',
-                            value: '${order.cargoWeight!.toStringAsFixed(0)} kg',
+                            value:
+                                '${order.cargoWeight!.toStringAsFixed(0)} kg',
                           ),
                         if (order.driverName != null) ...[
                           const Divider(),
@@ -324,7 +339,10 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.info_outline, color: Colors.orange),
+                              const Icon(
+                                Icons.info_outline,
+                                color: Colors.orange,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Special Instructions',
@@ -347,9 +365,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 // Timeline
                 Text(
                   'Timeline',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -413,7 +431,11 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             ),
                           ],
                         ),
-                        const Icon(Icons.attach_money, size: 32, color: Colors.green),
+                        const Icon(
+                          Icons.attach_money,
+                          size: 32,
+                          color: Colors.green,
+                        ),
                       ],
                     ),
                   ),
@@ -421,7 +443,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 const SizedBox(height: 32),
 
                 // Action Buttons
-                if (order.isPending || order.isConfirmed)
+                if (order.isPending || order.isConfirmed || order.isAssigned)
                   FilledButton.icon(
                     onPressed: () => _cancelOrder(context, order.id),
                     icon: const Icon(Icons.cancel),
@@ -458,24 +480,26 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Future<void> _cancelOrder(BuildContext context, String orderId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cancel Order'),
-        content: const Text('Are you sure you want to cancel this order?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('No'),
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Cancel Order'),
+            content: const Text('Are you sure you want to cancel this order?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('No'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                child: const Text('Yes, Cancel'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Yes, Cancel'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirmed) return;
 
@@ -489,20 +513,16 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         );
         context.pop();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to cancel order')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to cancel order')));
       }
     }
   }
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.icon,
-  });
+  const _InfoRow({required this.label, required this.value, this.icon});
 
   final String label;
   final String value;
@@ -515,13 +535,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
           Row(
             children: [
               if (icon != null) ...[
@@ -570,14 +584,14 @@ class _TimelineItem extends StatelessWidget {
               color: isCompleted
                   ? Colors.green
                   : isEstimate
-                      ? Colors.orange
-                      : Colors.grey[300],
+                  ? Colors.orange
+                  : Colors.grey[300],
             ),
             child: isCompleted
                 ? const Icon(Icons.check, size: 16, color: Colors.white)
                 : isEstimate
-                    ? const Icon(Icons.schedule, size: 16, color: Colors.white)
-                    : null,
+                ? const Icon(Icons.schedule, size: 16, color: Colors.white)
+                : null,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -587,25 +601,21 @@ class _TimelineItem extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isCompleted
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
                 if (date != null)
                   Text(
                     DateFormat('MMM dd, yyyy • hh:mm a').format(date!),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   )
                 else
                   Text(
                     'Not yet',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[400],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
               ],
             ),

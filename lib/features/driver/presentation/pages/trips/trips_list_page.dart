@@ -28,45 +28,36 @@ class _TripsListPageState extends State<TripsListPage>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<DriverTripProvider>(
-      builder: (context, provider, _) {
-        if (provider.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    final provider = context.watch<DriverTripProvider>();
 
-        return Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor:
-                  Theme.of(context).colorScheme.onSurfaceVariant,
-              indicatorColor: Theme.of(context).colorScheme.primary,
-              tabs: [
-                Tab(
-                  text: 'Active (${provider.activeTrips})',
-                ),
-                Tab(
-                  text: 'Completed (${provider.completedTrips.length})',
-                ),
-                Tab(
-                  text: 'All (${provider.totalTrips})',
-                ),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildTripsList(provider.assignedTrips + provider.inTransitTrips),
-                  _buildTripsList(provider.completedTrips),
-                  _buildTripsList(provider.trips),
-                ],
-              ),
-            ),
+    if (provider.isLoading && provider.trips.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Column(
+      children: [
+        TabBar(
+          controller: _tabController,
+          labelColor: Theme.of(context).colorScheme.primary,
+          unselectedLabelColor: Theme.of(context).colorScheme.onSurfaceVariant,
+          indicatorColor: Theme.of(context).colorScheme.primary,
+          tabs: [
+            Tab(text: 'Active (${provider.activeTrips})'),
+            Tab(text: 'Completed (${provider.completedTrips.length})'),
+            Tab(text: 'All (${provider.totalTrips})'),
           ],
-        );
-      },
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildTripsList(provider.assignedTrips + provider.inTransitTrips),
+              _buildTripsList(provider.completedTrips),
+              _buildTripsList(provider.trips),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -84,10 +75,7 @@ class _TripsListPageState extends State<TripsListPage>
             const SizedBox(height: 16),
             Text(
               'No trips found',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
             ),
           ],
         ),
@@ -176,7 +164,11 @@ class _TripListItem extends StatelessWidget {
                       color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.location_on, size: 16, color: Colors.blue),
+                    child: const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.blue,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -213,7 +205,11 @@ class _TripListItem extends StatelessWidget {
                       color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.location_on, size: 16, color: Colors.green),
+                    child: const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -248,7 +244,11 @@ class _TripListItem extends StatelessWidget {
                   if (trip.estimatedEarnings != null)
                     Row(
                       children: [
-                        const Icon(Icons.attach_money, size: 16, color: Colors.green),
+                        const Icon(
+                          Icons.attach_money,
+                          size: 16,
+                          color: Colors.green,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           'KES ${trip.estimatedEarnings!.toStringAsFixed(0)}',
@@ -262,7 +262,11 @@ class _TripListItem extends StatelessWidget {
                   if (trip.distance != null)
                     Row(
                       children: [
-                        Icon(Icons.straighten, size: 16, color: Colors.grey[600]),
+                        Icon(
+                          Icons.straighten,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${trip.distance!.toStringAsFixed(0)} km',

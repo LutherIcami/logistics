@@ -9,6 +9,7 @@ abstract class OrderRepository {
   Future<Order> createOrder(Order order);
   Future<Order> updateOrder(Order order);
   Future<void> cancelOrder(String orderId);
+  Stream<List<Order>> streamOrders();
 }
 
 /// Simple in-memory mock implementation for local/testing use.
@@ -96,8 +97,19 @@ class MockOrderRepository implements OrderRepository {
   @override
   Future<List<Order>> getOrdersByCustomerId(String customerId) async {
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    return _orders.where((order) => order.customerId == customerId).toList()
-      ..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+    // For mock/testing: return all orders but update their customerId to match
+    // This ensures orders show up regardless of which user is logged in
+    final ordersForCustomer = _orders.map((order) {
+      return order.copyWith(
+        customerId: customerId,
+        customerName: order.customerName, // Keep original name
+      );
+    }).toList()..sort((a, b) => b.orderDate.compareTo(a.orderDate));
+
+    print(
+      'DEBUG MockRepo: Returning ${ordersForCustomer.length} orders for customer $customerId',
+    );
+    return ordersForCustomer;
   }
 
   @override
@@ -140,5 +152,11 @@ class MockOrderRepository implements OrderRepository {
     if (index != -1) {
       _orders[index] = _orders[index].copyWith(status: 'cancelled');
     }
+  }
+
+  @override
+  Stream<List<Order>> streamOrders() {
+    // Return a periodic stream for mock
+    return Stream.periodic(const Duration(seconds: 5), (_) => _orders);
   }
 }

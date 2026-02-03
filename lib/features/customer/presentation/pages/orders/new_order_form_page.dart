@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/customer_order_provider.dart';
 import '../../../domain/models/order_model.dart';
 import '/../../../features/auth/presentation/providers/auth_provider.dart';
+import 'package:uuid/uuid.dart';
 
 class NewOrderFormPage extends StatefulWidget {
   const NewOrderFormPage({super.key});
@@ -125,7 +126,7 @@ class _NewOrderFormPageState extends State<NewOrderFormPage> {
     }
 
     final newOrder = Order(
-      id: 'TEMP-${DateTime.now().millisecondsSinceEpoch}', // Temporary ID, will be replaced by repository
+      id: const Uuid().v4(), // Generate a valid UUID for the new order
       customerId: customer.id,
       customerName: customer.name,
       pickupLocation: _pickupLocationController.text.trim(),

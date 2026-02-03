@@ -1,9 +1,13 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../customer/domain/models/order_model.dart';
 import '../../../customer/data/repositories/order_repository.dart';
 import '../../../driver/data/repositories/trip_repository.dart';
 import '../../../driver/domain/models/trip_model.dart';
 import '../../../../app/di/injection_container.dart' as di;
+import '../../../../features/common/domain/models/notification_model.dart';
+import '../../../../features/common/domain/repositories/notification_repository.dart';
+import 'package:uuid/uuid.dart';
 
 class ShipmentProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -18,19 +22,42 @@ class ShipmentProvider extends ChangeNotifier {
   String get currentFilter => _currentFilter;
 
   // Stats
-  int get pendingCount => _shipments.where((s) => s.isPending).length;
-  int get activeCount =>
-      _shipments.where((s) => s.isInTransit || s.isAssigned).length;
+  int get pendingCount => _shipments
+      .where((s) => (s.isPending || s.isConfirmed) && s.driverId == null)
+      .length;
+  int get assignedCount => _shipments
+      .where((s) => s.isAssigned || (s.driverId != null && !s.isInTransit))
+      .length;
+  int get activeCount => _shipments.where((s) => s.isInTransit).length;
   int get completedCount => _shipments.where((s) => s.isDelivered).length;
 
   ShipmentProvider()
     : _repository = di.sl<OrderRepository>(),
-      _tripRepository = di.sl<TripRepository>() {
+      _tripRepository = di.sl<TripRepository>(),
+      _notificationRepository = di.sl<NotificationRepository>() {
     loadShipments();
+    _initRealtimeSubscription();
   }
 
   final OrderRepository _repository;
   final TripRepository _tripRepository;
+  final NotificationRepository _notificationRepository;
+  StreamSubscription<List<Order>>? _subscription;
+
+  void _initRealtimeSubscription() {
+    _subscription?.cancel();
+    _subscription = _repository.streamOrders().listen((data) {
+      _shipments = data;
+      _applyFilter();
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   Future<void> loadShipments() async {
     _isLoading = true;
@@ -76,12 +103,29 @@ class ShipmentProvider extends ChangeNotifier {
   void _applyFilter() {
     if (_currentFilter == 'All') {
       _filteredShipments = List.from(_shipments);
+    } else if (_currentFilter == 'Pending') {
+      // Pending should only show unassigned shipments
+      _filteredShipments = _shipments
+          .where((s) => (s.isPending || s.isConfirmed) && s.driverId == null)
+          .toList();
+    } else if (_currentFilter == 'Assigned') {
+      // Assigned shows shipments that have a driver but haven't started transit
+      _filteredShipments = _shipments
+          .where(
+            (s) =>
+                s.isAssigned ||
+                (s.driverId != null && !s.isInTransit && !s.isDelivered),
+          )
+          .toList();
+    } else if (_currentFilter == 'In Transit') {
+      _filteredShipments = _shipments.where((s) => s.isInTransit).toList();
     } else {
       _filteredShipments = _shipments.where((s) {
-        // Map display text back to status codes for filtering if needed,
-        // or just compare against status or statusDisplayText
-        return s.statusDisplayText == _currentFilter ||
-            s.status == _currentFilter.toLowerCase().replaceAll(' ', '_');
+        // Robust check for other statuses
+        final normalizedStatus = s.status.toLowerCase().replaceAll('_', ' ');
+        final normalizedFilter = _currentFilter.toLowerCase();
+        return normalizedStatus == normalizedFilter ||
+            s.statusDisplayText.toLowerCase() == normalizedFilter;
       }).toList();
     }
   }
@@ -116,8 +160,9 @@ class ShipmentProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      _error = 'Failed to update shipment';
+      _error = 'Failed to update shipment: $e';
       notifyListeners();
+      rethrow; // Ensure the caller knows it failed
     }
   }
 
@@ -134,6 +179,11 @@ class ShipmentProvider extends ChangeNotifier {
       final shipment = getShipmentById(shipmentId);
       if (shipment == null) throw Exception('Shipment not found');
 
+      // Check if already assigned
+      if (shipment.driverId != null || shipment.isAssigned) {
+        throw Exception('This shipment is already assigned to a driver.');
+      }
+
       final updatedShipment = shipment.copyWith(
         driverId: driverId,
         driverName: driverName,
@@ -141,12 +191,14 @@ class ShipmentProvider extends ChangeNotifier {
         status: 'assigned',
       );
 
-      // 1. Update the order
+      // 1. Update the order (Will now throw if database rejects it)
       await updateShipment(updatedShipment);
 
       // 2. Create a trip for the driver
+      final tripId =
+          shipmentId; // Use Order ID as Trip ID for perfect sync link
       final newTrip = Trip(
-        id: 'TRP-${DateTime.now().millisecondsSinceEpoch}',
+        id: tripId,
         driverId: driverId,
         driverName: driverName,
         pickupLocation: shipment.pickupLocation,
@@ -159,11 +211,27 @@ class ShipmentProvider extends ChangeNotifier {
         cargoWeight: shipment.cargoWeight,
         specialInstructions: shipment.specialInstructions,
         distance: shipment.distance,
-        estimatedEarnings:
-            shipment.totalCost, // Or calculate based on some logic
+        estimatedEarnings: shipment.totalCost,
+        trackingNumber: shipment.trackingNumber,
       );
 
       await _tripRepository.createTrip(newTrip);
+
+      // 3. Create a notification for the driver
+      const uuid = Uuid();
+      final notification = AppNotification(
+        id: uuid.v4(),
+        userId: driverId,
+        title: 'New Trip Assignment',
+        message:
+            'You have been assigned a new mission: ${shipment.cargoType} to ${shipment.deliveryLocation}',
+        type: 'trip_assignment',
+        relatedEntityId: tripId,
+        isRead: false,
+        createdAt: DateTime.now(),
+      );
+
+      await _notificationRepository.sendNotification(notification);
 
       _error = null;
       return true;
@@ -185,7 +253,6 @@ class ShipmentProvider extends ChangeNotifier {
     }
   }
 
-  // Helper to get available statuses
   static const List<String> availableStatuses = [
     'pending',
     'confirmed',

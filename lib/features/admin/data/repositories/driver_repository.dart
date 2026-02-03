@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import '../../../admin/domain/models/driver_model.dart';
 
@@ -9,6 +10,7 @@ abstract class DriverRepository {
   Future<Driver> addDriver(Driver driver);
   Future<Driver> updateDriver(Driver driver);
   Future<void> deleteDriver(String id);
+  Future<String> uploadProfileImage(String driverId, File image);
 }
 
 /// Simple in-memory mock implementation for local/testing use.
@@ -89,5 +91,10 @@ class MockDriverRepository implements DriverRepository {
   Future<void> deleteDriver(String id) async {
     _drivers.removeWhere((d) => d.id == id);
   }
-}
 
+  @override
+  Future<String> uploadProfileImage(String driverId, File image) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    return 'https://via.placeholder.com/150';
+  }
+}

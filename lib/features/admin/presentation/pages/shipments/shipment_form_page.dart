@@ -244,24 +244,23 @@ class _ShipmentFormPageState extends State<ShipmentFormPage> {
         cargoType: _cargoTypeController.text,
         cargoWeight: double.tryParse(_weightController.text),
         totalCost: double.tryParse(_costController.text) ?? 0.0,
+        trackingNumber: 'TRK-${DateTime.now().millisecondsSinceEpoch}',
       );
 
       if (widget.shipmentId != null) {
-        // Find efficient way to update, ideally define update method in provider
-        // Re-using add for simplicity in mock, or we should implement update properly
         final original = provider.getShipmentById(widget.shipmentId!);
         if (original != null) {
           provider.updateShipment(
             original.copyWith(
-              customerName: shipment.customerName,
-              pickupLocation: shipment.pickupLocation,
-              deliveryLocation: shipment.deliveryLocation,
-              status: shipment.status,
-              pickupDate: shipment.pickupDate,
-              deliveryDate: shipment.deliveryDate,
-              cargoType: shipment.cargoType,
-              cargoWeight: shipment.cargoWeight,
-              totalCost: shipment.totalCost,
+              customerName: _customerNameController.text,
+              pickupLocation: _pickupLocationController.text,
+              deliveryLocation: _deliveryLocationController.text,
+              status: _status,
+              pickupDate: _pickupDate,
+              deliveryDate: _deliveryDate,
+              cargoType: _cargoTypeController.text,
+              cargoWeight: double.tryParse(_weightController.text),
+              totalCost: double.tryParse(_costController.text) ?? 0.0,
             ),
           );
         }

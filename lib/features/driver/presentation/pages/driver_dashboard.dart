@@ -6,6 +6,7 @@ import '../providers/driver_trip_provider.dart';
 import 'trips/trips_list_page.dart';
 import 'profile/driver_profile_page.dart';
 import 'earnings/earnings_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'notifications/notifications_page.dart';
 
 class DriverDashboard extends StatefulWidget {
@@ -21,94 +22,69 @@ class _DriverDashboardState extends State<DriverDashboard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final authProvider = context.watch<AuthProvider>();
-    final tripProvider = context.read<DriverTripProvider>();
+    final authProvider = Provider.of<AuthProvider>(context);
+    final tripProvider = Provider.of<DriverTripProvider>(
+      context,
+      listen: false,
+    );
 
     if (authProvider.user != null &&
         tripProvider.currentDriver == null &&
-        !tripProvider.isLoading) {
-      tripProvider.setCurrentDriver(authProvider.user!.id);
+        !tripProvider.isLoading &&
+        tripProvider.error == null) {
+      // Use microtask to avoid calling notifyListeners during build/dependencies change phase
+      Future.microtask(
+        () => tripProvider.setCurrentDriver(authProvider.user!.id),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_getAppBarTitle()),
-        backgroundColor: Colors.orangeAccent,
-        foregroundColor: Colors.white,
-        actions: [
-          Consumer<DriverTripProvider>(
-            builder: (context, tripProvider, _) {
-              final authUser = context.watch<AuthProvider>().user;
-              int unreadCount = tripProvider.unreadNotificationCount;
-              if (authUser != null && !authUser.isProfileComplete) {
-                unreadCount++;
-              }
+    final tripProvider = Provider.of<DriverTripProvider>(context);
+    final authProvider = Provider.of<AuthProvider>(context);
+    final authUser = authProvider.user;
 
-              return IconButton(
-                icon: Badge(
-                  label: unreadCount > 0 ? Text('$unreadCount') : null,
-                  isLabelVisible: unreadCount > 0,
-                  backgroundColor: Colors.red,
-                  child: const Icon(Icons.notifications_outlined),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            expandedHeight: 120,
+            pinned: true,
+            elevation: 0,
+            backgroundColor: const Color(0xFFFF9800),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                _getAppBarTitle(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
+              ),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFFFFA726), Color(0xFFFF9800)],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              _buildNotificationAction(tripProvider, authProvider, authUser),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
                 onPressed: () {
-                  setState(() => _currentIndex = 4);
+                  context.read<AuthProvider>().logout();
+                  context.go('/login');
                 },
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              context.go('/login');
-            },
+              ),
+            ],
           ),
         ],
-      ),
-      body: Consumer<DriverTripProvider>(
-        builder: (context, provider, _) {
-          // Show loading only if we're still initializing
-          if (provider.isLoading &&
-              provider.currentDriver == null &&
-              provider.trips.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          // If there's an error and no data, show error screen
-          if (provider.error != null &&
-              provider.currentDriver == null &&
-              provider.trips.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Error: ${provider.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () {
-                      final authProvider = context.read<AuthProvider>();
-                      if (authProvider.user != null) {
-                        provider.setCurrentDriver(authProvider.user!.id);
-                      }
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Always show the body - it will handle null cases internally
-          return Column(
-            children: [Expanded(child: _buildBody(context, provider))],
-          );
-        },
+        body: _buildContent(tripProvider, authProvider),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
@@ -146,6 +122,77 @@ class _DriverDashboardState extends State<DriverDashboard> {
         ],
       ),
     );
+  }
+
+  Widget _buildNotificationAction(
+    DriverTripProvider tripProvider,
+    AuthProvider authProvider,
+    dynamic authUser,
+  ) {
+    int unreadCount = tripProvider.unreadNotificationCount;
+    if (authUser != null &&
+        !authUser.isProfileComplete &&
+        !authProvider.isNotificationRead('profile-incomplete')) {
+      unreadCount++;
+    }
+
+    return IconButton(
+      icon: Badge(
+        label: Text('$unreadCount'),
+        isLabelVisible: unreadCount > 0,
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.notifications_outlined, color: Colors.white),
+      ),
+      onPressed: () {
+        setState(() => _currentIndex = 4);
+      },
+    );
+  }
+
+  Widget _buildContent(DriverTripProvider provider, AuthProvider authProvider) {
+    // Show loading only if we're still initializing
+    if (provider.isLoading &&
+        provider.currentDriver == null &&
+        provider.trips.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(48.0),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // If there's an error and no data, show error screen
+    if (provider.error != null &&
+        provider.currentDriver == null &&
+        provider.trips.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Error: ${provider.error}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  final authUser = authProvider.user;
+                  if (authUser != null) {
+                    provider.setCurrentDriver(authUser.id);
+                  }
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Always show the body - it will handle null cases internally
+    return _buildBody(context, provider);
   }
 
   String _getAppBarTitle() {
@@ -273,10 +320,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
           // Quick Stats
           Text(
-            'Overview',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            'OVERVIEW',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF64748B),
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 16),
           _buildStatsGrid(provider, driver),
@@ -284,10 +334,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
 
           // Quick Actions
           Text(
-            'Quick Actions',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            'QUICK ACTIONS',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF64748B),
+              letterSpacing: 1.5,
+            ),
           ),
           const SizedBox(height: 16),
           _buildQuickActions(provider),
@@ -296,10 +349,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
           // Active Trip (if any)
           if (provider.inTransitTrips.isNotEmpty) ...[
             Text(
-              'Active Trip',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              'ACTIVE TRIP',
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF64748B),
+                letterSpacing: 1.5,
+              ),
             ),
             const SizedBox(height: 16),
             _ActiveTripCard(trip: provider.inTransitTrips.first),
@@ -311,10 +367,13 @@ class _DriverDashboardState extends State<DriverDashboard> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Recent Trips',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                'RECENT TRIPS',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF64748B),
+                  letterSpacing: 1.5,
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -342,25 +401,53 @@ class _DriverDashboardState extends State<DriverDashboard> {
   }
 
   Widget _buildWelcomeCard(dynamic driver) {
-    return Card(
-      color: Colors.orangeAccent,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFA726), Color(0xFFFF9800)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withValues(alpha: 0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: Colors.white,
-              child: Text(
-                driver.name.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orangeAccent,
+            Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.orange.shade100,
+                child: Text(
+                  driver.name.substring(0, 1).toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFFF9800),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -368,53 +455,98 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   Text(
                     'Welcome back,',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 14,
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
                     driver.name,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: driver.status == 'active'
-                              ? Colors.greenAccent
-                              : Colors.grey,
-                          shape: BoxShape.circle,
-                        ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        driver.statusDisplayText,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.9),
-                          fontSize: 12,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: driver.status == 'active'
+                                ? Colors.greenAccent
+                                : Colors.grey.shade300,
+                            shape: BoxShape.circle,
+                            boxShadow: driver.status == 'active'
+                                ? [
+                                    BoxShadow(
+                                      color: Colors.greenAccent.withValues(
+                                        alpha: 0.5,
+                                      ),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ]
+                                : null,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        Text(
+                          driver.statusDisplayText,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
             Column(
               children: [
-                const Icon(Icons.star, color: Colors.amber, size: 28),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.star, color: Colors.amber, size: 28),
+                ),
+                const SizedBox(height: 6),
                 Text(
                   driver.rating.toString(),
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  'Rating',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -481,10 +613,51 @@ class _DriverDashboardState extends State<DriverDashboard> {
           ),
           TextButton(
             onPressed: () {
-              // Navigation to maintenance details or contact
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Contact Dispatch for maintenance schedule'),
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(
+                    isCritical ? 'Urgent Maintenance' : 'Maintenance Schedule',
+                  ),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Vehicle: ${vehicle.displayName}'),
+                      if (vehicle.nextMaintenanceDate != null)
+                        Text(
+                          'Next Due: ${vehicle.nextMaintenanceDate.toString().split(' ')[0]}',
+                        ),
+                      if (vehicle.lastMaintenanceDate != null)
+                        Text(
+                          'Last Service: ${vehicle.lastMaintenanceDate.toString().split(' ')[0]}',
+                        ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Please visit the workshop immediately or contact dispatch over the phone.',
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Close'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final Uri launchUri = Uri(
+                          scheme: 'tel',
+                          path: '0700000000',
+                        ); // Replace with actual dispatch number
+                        if (await canLaunchUrl(launchUri)) {
+                          await launchUrl(launchUri);
+                        }
+                      },
+                      icon: const Icon(Icons.call),
+                      label: const Text('Call Dispatch'),
+                    ),
+                  ],
                 ),
               );
             },
@@ -588,10 +761,20 @@ class _DriverDashboardState extends State<DriverDashboard> {
             title: 'Support',
             icon: Icons.headset_mic,
             color: Colors.green,
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Support chat coming soon')),
-              );
+            onTap: () async {
+              final Uri launchUri = Uri(
+                scheme: 'tel',
+                path: '0700000000',
+              ); // Central Support
+              if (await canLaunchUrl(launchUri)) {
+                await launchUrl(launchUri);
+              } else {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cannot launch dialer')),
+                  );
+                }
+              }
             },
           ),
         ),
@@ -700,38 +883,48 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: color, size: 24),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              style: const TextStyle(
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: color,
+                color: Color(0xFF0F172A),
+                letterSpacing: -0.5,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               title,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -756,21 +949,29 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Material(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
+      ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
           child: Column(
             children: [
               Icon(icon, color: color, size: 28),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 title,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
                 textAlign: TextAlign.center,
               ),
             ],

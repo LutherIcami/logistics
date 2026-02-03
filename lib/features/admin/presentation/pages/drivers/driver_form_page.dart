@@ -65,6 +65,25 @@ class _DriverFormPageState extends State<DriverFormPage> {
     super.dispose();
   }
 
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      // Format as YYYY-MM-DD
+      setState(() {
+        controller.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BaseModulePage(
@@ -162,12 +181,17 @@ class _DriverFormPageState extends State<DriverFormPage> {
                     label: 'License Expiry Date',
                     icon: Icons.date_range_outlined,
                     hint: 'YYYY-MM-DD',
+                    readOnly: true,
+                    onTap: () => _selectDate(context, _licenseExpiryController),
                   ),
                 ]),
                 const SizedBox(height: 32),
-                _buildSectionTitle('Operational Status'),
-                const SizedBox(height: 16),
-                _buildStatusSelector(),
+                if (widget.isEdit) ...[
+                  _buildSectionTitle('Operational Status'),
+                  const SizedBox(height: 16),
+                  _buildStatusSelector(),
+                  const SizedBox(height: 32),
+                ],
                 const SizedBox(height: 48),
                 _buildSubmitButton(),
                 const SizedBox(height: 60),
@@ -240,6 +264,8 @@ class _DriverFormPageState extends State<DriverFormPage> {
     bool isPassword = false,
     TextInputType? keyboardType,
     String? Function(String?)? validator,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,6 +284,8 @@ class _DriverFormPageState extends State<DriverFormPage> {
           keyboardType: keyboardType,
           validator: validator,
           obscureText: isPassword,
+          readOnly: readOnly,
+          onTap: onTap,
           style: const TextStyle(fontSize: 15),
           decoration: InputDecoration(
             hintText: hint,

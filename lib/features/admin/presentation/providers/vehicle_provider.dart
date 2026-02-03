@@ -79,7 +79,7 @@ class VehicleProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to add vehicle';
+      _error = 'Failed to add vehicle: ${e.toString()}';
       notifyListeners();
       return false;
     }
@@ -97,7 +97,7 @@ class VehicleProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to update vehicle';
+      _error = 'Failed to update vehicle: ${e.toString()}';
       notifyListeners();
       return false;
     }
@@ -110,7 +110,7 @@ class VehicleProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to delete vehicle';
+      _error = 'Failed to delete vehicle: ${e.toString()}';
       notifyListeners();
       return false;
     }

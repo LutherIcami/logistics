@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as path;
 import '../../domain/models/driver_model.dart';
 import 'driver_repository.dart';
 
@@ -68,6 +70,32 @@ class SupabaseDriverRepository implements DriverRepository {
       await client.from('drivers').delete().eq('id', id);
     } catch (e) {
       throw Exception('Failed to delete driver: $e');
+    }
+  }
+
+  @override
+  Future<String> uploadProfileImage(String driverId, File image) async {
+    try {
+      final fileExt = path.extension(image.path);
+      final fileName =
+          '$driverId${DateTime.now().millisecondsSinceEpoch}$fileExt';
+      final filePath = '$driverId/$fileName';
+
+      await client.storage
+          .from('driver-profiles')
+          .upload(
+            filePath,
+            image,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      final String imageUrl = client.storage
+          .from('driver-profiles')
+          .getPublicUrl(filePath);
+
+      return imageUrl;
+    } catch (e) {
+      throw Exception('Failed to upload profile image: $e');
     }
   }
 }

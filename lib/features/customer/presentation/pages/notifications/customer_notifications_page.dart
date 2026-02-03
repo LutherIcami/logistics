@@ -53,7 +53,7 @@ class CustomerNotificationsPage extends StatelessWidget {
               'Please update your profile details (avatar and full name) to ensure full system access.',
           time: DateTime.now(),
           type: NotificationType.summary,
-          isRead: false,
+          isRead: authProvider.isNotificationRead('profile-incomplete'),
         ),
       );
     }
@@ -87,7 +87,7 @@ class CustomerNotificationsPage extends StatelessWidget {
             message: 'Your order for ${order.cargoType} is being processed.',
             time: order.orderDate,
             type: NotificationType.orderInfo,
-            isRead: false,
+            isRead: provider.isNotificationRead('pnd-${order.id}'),
           ),
         );
       } else if (order.isInTransit) {
@@ -98,7 +98,7 @@ class CustomerNotificationsPage extends StatelessWidget {
             message: 'Your cargo is on the way to ${order.deliveryLocation}.',
             time: DateTime.now(), // Approximate
             type: NotificationType.tracking,
-            isRead: false,
+            isRead: provider.isNotificationRead('trn-${order.id}'),
           ),
         );
       }
@@ -123,6 +123,29 @@ class CustomerNotificationsPage extends StatelessWidget {
           ),
           TextButton(
             onPressed: () {
+              final ids = notifications.map((n) => n.id).toList();
+              final provider = Provider.of<CustomerOrderProvider>(
+                context,
+                listen: false,
+              );
+              final authProvider = Provider.of<AuthProvider>(
+                context,
+                listen: false,
+              );
+
+              // Split logic for different providers
+              final authIds = ids
+                  .where((id) => id == 'profile-incomplete')
+                  .toList();
+              final customerIds = ids
+                  .where((id) => id != 'profile-incomplete')
+                  .toList();
+
+              if (authIds.isNotEmpty)
+                authProvider.markAllNotificationsAsRead(authIds);
+              if (customerIds.isNotEmpty)
+                provider.markAllNotificationsAsRead(customerIds);
+
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('All notifications marked as read'),
@@ -178,19 +201,20 @@ class _NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: notification.isRead ? 1 : 3,
-      color: notification.isRead ? null : Colors.green.withValues(alpha: 0.05),
+      elevation: notification.isRead ? 1 : 2,
+      color: notification.isRead ? Colors.white : Colors.blue.shade50,
+      margin: const EdgeInsets.only(bottom: 4),
       child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: _getTypeColor(notification.type).withValues(alpha: 0.1),
+            color: _getTypeColor(notification.type).withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Icon(
             _getTypeIcon(notification.type),
-            color: _getTypeColor(notification.type),
+            color: _getTypeColor(notification.type).withValues(alpha: 1.0),
             size: 24,
           ),
         ),
@@ -201,18 +225,27 @@ class _NotificationCard extends StatelessWidget {
                 notification.title,
                 style: TextStyle(
                   fontWeight: notification.isRead
-                      ? FontWeight.normal
+                      ? FontWeight.w600
                       : FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87,
                 ),
               ),
             ),
             if (!notification.isRead)
               Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.green,
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade700,
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.4),
+                      blurRadius: 4,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
               ),
           ],

@@ -13,8 +13,8 @@ class SupabaseTripRepository implements TripRepository {
       final response = await client
           .from('trips')
           .select()
-          .eq('driverId', driverId)
-          .order('assignedDate', ascending: false);
+          .eq('driver_id', driverId)
+          .order('assigned_date', ascending: false);
       return (response as List).map((json) => Trip.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch trips: $e');
@@ -42,9 +42,9 @@ class SupabaseTripRepository implements TripRepository {
       Map<String, dynamic> updateData = {'status': status};
 
       if (status == 'in_transit') {
-        updateData['pickupDate'] = now;
+        updateData['pickup_date'] = now;
       } else if (status == 'delivered') {
-        updateData['deliveryDate'] = now;
+        updateData['delivery_date'] = now;
       }
 
       final response = await client
@@ -86,5 +86,15 @@ class SupabaseTripRepository implements TripRepository {
     } catch (e) {
       throw Exception('Failed to create trip: $e');
     }
+  }
+
+  @override
+  Stream<List<Trip>> streamTrips(String driverId) {
+    return client
+        .from('trips')
+        .stream(primaryKey: ['id'])
+        .eq('driver_id', driverId)
+        .order('assigned_date', ascending: false)
+        .map((data) => data.map((json) => Trip.fromJson(json)).toList());
   }
 }

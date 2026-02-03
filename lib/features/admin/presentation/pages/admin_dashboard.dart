@@ -138,11 +138,26 @@ class AdminDashboard extends StatelessWidget {
       ),
       actions: [
         IconButton(
-          icon: const Icon(
-            Icons.notifications_none_rounded,
-            color: Colors.white70,
+          icon: Consumer<AuthProvider>(
+            builder: (context, authProvider, child) {
+              final user = authProvider.user;
+              final showBadge =
+                  user != null &&
+                  !user.isProfileComplete &&
+                  !authProvider.isNotificationRead('profile-incomplete');
+
+              return Badge(
+                label: showBadge ? const Text('1') : null,
+                isLabelVisible: showBadge,
+                backgroundColor: Colors.red,
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Colors.white70,
+                ),
+              );
+            },
           ),
-          onPressed: () {},
+          onPressed: () => context.push('/admin/notifications'),
         ),
         IconButton(
           icon: const Icon(
@@ -181,24 +196,24 @@ class AdminDashboard extends StatelessWidget {
       child: Row(
         children: [
           AdminStatCard(
-            title: 'Fleet Ready',
-            value: '${vp.activeVehiclesCount} Units',
-            icon: Icons.local_shipping_rounded,
+            title: 'Queued Loads',
+            value: '${sp.pendingCount} New',
+            icon: Icons.inventory_2_rounded,
+            color: Colors.orange,
+          ),
+          const SizedBox(width: 16),
+          AdminStatCard(
+            title: 'Active Missions',
+            value: '${sp.activeCount} In Transit',
+            icon: Icons.radar_rounded,
             color: Colors.blue,
           ),
           const SizedBox(width: 16),
           AdminStatCard(
-            title: 'Gross Revenue',
-            value: 'KES ${fp.totalRevenue.toStringAsFixed(0)}',
-            icon: Icons.account_balance_wallet_rounded,
-            color: Colors.green,
-          ),
-          const SizedBox(width: 16),
-          AdminStatCard(
-            title: 'Queued Loads',
-            value: '${sp.pendingCount} Pending',
-            icon: Icons.inventory_2_rounded,
-            color: Colors.orange,
+            title: 'Personnel Ready',
+            value: '${sp.assignedCount} Assigned',
+            icon: Icons.person_pin_rounded,
+            color: Colors.purple,
           ),
         ],
       ),
@@ -218,7 +233,7 @@ class AdminDashboard extends StatelessWidget {
         _QuickActionBtn(
           icon: Icons.person_add_alt_1_rounded,
           label: 'Deploy Driver',
-          onTap: () => context.push('/admin/drivers/new'),
+          onTap: () => context.push('/admin/drivers/add'),
           color: Colors.teal,
         ),
         const SizedBox(width: 12),
@@ -274,46 +289,155 @@ class AdminDashboard extends StatelessWidget {
   }
 
   Widget _buildActivityFeed() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    return Consumer3<ShipmentProvider, VehicleProvider, AuthProvider>(
+      builder: (context, shipmentProvider, vehicleProvider, authProvider, _) {
+        final activities = <Map<String, dynamic>>[];
+
+        // Get recently completed shipments (last 5)
+        final completedShipments =
+            shipmentProvider.shipments
+                .where((s) => s.status == 'delivered')
+                .toList()
+              ..sort(
+                (a, b) => (b.deliveryDate ?? DateTime.now()).compareTo(
+                  a.deliveryDate ?? DateTime.now(),
+                ),
+              );
+
+        for (var shipment in completedShipments.take(3)) {
+          final timeAgo = _getTimeAgo(shipment.deliveryDate ?? DateTime.now());
+          activities.add({
+            'icon': Icons.check_circle_rounded,
+            'color': Colors.green,
+            'title': 'Shipment #${shipment.id.substring(0, 8)} Delivered',
+            'time': timeAgo,
+            'user': shipment.driverName ?? 'Driver',
+            'timestamp': shipment.deliveryDate ?? DateTime.now(),
+          });
+        }
+
+        // Get vehicles needing maintenance
+        final maintenanceVehicles = vehicleProvider.vehicles
+            .where((v) => v.needsMaintenance || v.isMaintenanceOverdue)
+            .toList();
+
+        for (var vehicle in maintenanceVehicles.take(2)) {
+          activities.add({
+            'icon': Icons.warning_rounded,
+            'color': Colors.orange,
+            'title': 'Maintenance Alert: ${vehicle.registrationNumber}',
+            'time': 'Pending',
+            'user': 'Fleet System',
+            'timestamp': DateTime.now().subtract(const Duration(hours: 1)),
+          });
+        }
+
+        // Get recently added vehicles (last 7 days)
+        final recentVehicles = vehicleProvider.vehicles
+            .where((v) {
+              // Assuming vehicles have a createdAt field, or we can use a simple check
+              return v.status == 'active';
+            })
+            .take(2)
+            .toList();
+
+        for (var vehicle in recentVehicles) {
+          activities.add({
+            'icon': Icons.local_shipping_rounded,
+            'color': Colors.blue,
+            'title': 'Fleet Expand: ${vehicle.registrationNumber}',
+            'time': 'Recently added',
+            'user': authProvider.user?.fullName ?? 'Admin',
+            'timestamp': DateTime.now().subtract(const Duration(days: 1)),
+          });
+        }
+
+        // Sort all activities by timestamp
+        activities.sort(
+          (a, b) => (b['timestamp'] as DateTime).compareTo(
+            a['timestamp'] as DateTime,
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _ActivityItem(
-            icon: Icons.check_circle_rounded,
-            color: Colors.green,
-            title: 'Trip #KJ-908 Completed',
-            time: '2 mins ago',
-            user: 'Driver Mutua',
+        );
+
+        // Take top 5 most recent activities
+        final topActivities = activities.take(5).toList();
+
+        if (topActivities.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(40),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.02),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.inbox_rounded, size: 48, color: Colors.grey[300]),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No recent activity',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          const Divider(height: 1, indent: 64),
-          _ActivityItem(
-            icon: Icons.local_shipping_rounded,
-            color: Colors.blue,
-            title: 'Fleet Expand: New Vehicle',
-            time: '15 mins ago',
-            user: 'Manager Sarah',
+          child: Column(
+            children: [
+              for (int i = 0; i < topActivities.length; i++) ...[
+                _ActivityItem(
+                  icon: topActivities[i]['icon'] as IconData,
+                  color: topActivities[i]['color'] as Color,
+                  title: topActivities[i]['title'] as String,
+                  time: topActivities[i]['time'] as String,
+                  user: topActivities[i]['user'] as String,
+                ),
+                if (i < topActivities.length - 1)
+                  const Divider(height: 1, indent: 64),
+              ],
+            ],
           ),
-          const Divider(height: 1, indent: 64),
-          _ActivityItem(
-            icon: Icons.warning_rounded,
-            color: Colors.orange,
-            title: 'Maintenance Alert: KCB 123X',
-            time: '1 hour ago',
-            user: 'System Bot',
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'Just now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} min${difference.inMinutes > 1 ? 's' : ''} ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} day${difference.inDays > 1 ? 's' : ''} ago';
+    } else {
+      return '${(difference.inDays / 7).floor()} week${(difference.inDays / 7).floor() > 1 ? 's' : ''} ago';
+    }
   }
 }
 
@@ -333,27 +457,56 @@ class _QuickActionBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Material(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Column(
-              children: [
-                Icon(icon, color: color, size: 24),
-                const SizedBox(height: 8),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(color: color.withValues(alpha: 0.1), width: 1),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          color.withValues(alpha: 0.15),
+                          color.withValues(alpha: 0.08),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(icon, color: color, size: 26),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: const Color(0xFF1E293B),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

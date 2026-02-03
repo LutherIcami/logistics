@@ -20,6 +20,8 @@ import '../../features/admin/data/repositories/reports_repository.dart';
 import '../../features/admin/data/repositories/supabase_reports_repository.dart';
 import '../../features/admin/data/repositories/settings_repository.dart';
 import '../../features/admin/data/repositories/supabase_settings_repository.dart';
+import '../../features/common/domain/repositories/notification_repository.dart';
+import '../../features/common/data/repositories/supabase_notification_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -68,6 +70,11 @@ Future<void> init() async {
   // Admin - Settings
   sl.registerLazySingleton<SettingsRepository>(
     () => SupabaseSettingsRepository(sl()),
+  );
+
+  // Common - Notifications
+  sl.registerLazySingleton<NotificationRepository>(
+    () => SupabaseNotificationRepository(sl()),
   );
 
   // Repositories

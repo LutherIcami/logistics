@@ -27,6 +27,7 @@ import '../features/admin/presentation/pages/reports/reports_page.dart';
 import '../features/admin/presentation/pages/reports/financial_report_page.dart';
 import '../features/admin/presentation/pages/reports/shipment_analytics_page.dart';
 import '../features/admin/presentation/pages/reports/driver_performance_page.dart';
+import '../features/admin/presentation/pages/notifications/admin_notifications_page.dart';
 import '../features/admin/presentation/pages/settings/settings_page.dart';
 import '../features/admin/presentation/pages/support/support_page.dart';
 import '../features/driver/presentation/pages/driver_dashboard.dart';
@@ -187,6 +188,11 @@ final GoRouter appRouter = GoRouter(
               builder: (context, state) => const DriverPerformancePage(),
             ),
           ],
+        ),
+        // Notifications
+        GoRoute(
+          path: 'notifications',
+          builder: (context, state) => const AdminNotificationsPage(),
         ),
         // Settings Routes
         GoRoute(

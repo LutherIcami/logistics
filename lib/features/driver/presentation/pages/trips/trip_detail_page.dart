@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/driver_trip_provider.dart';
+import '../../../domain/models/trip_model.dart';
+
+import '../../../../chat/presentation/pages/chat_page.dart';
 
 class TripDetailPage extends StatefulWidget {
   final String tripId;
@@ -31,17 +34,46 @@ class _TripDetailPageState extends State<TripDetailPage> {
         title: const Text('Trip Details'),
         backgroundColor: Colors.orangeAccent,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.chat),
+            onPressed: () {
+              final provider = context.read<DriverTripProvider>();
+              try {
+                final trip = provider.trips.firstWhere(
+                  (t) => t.id == widget.tripId,
+                );
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ChatPage(
+                      trackingNumber: trip.trackingNumber ?? trip.id,
+                      currentUserRole: 'driver',
+                      currentUserName: trip.driverName,
+                    ),
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Trip data not available')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: Consumer<DriverTripProvider>(
         builder: (context, provider, _) {
-          if (provider.trips.isEmpty) {
+          if (provider.isLoading && provider.trips.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          
-          final trip = provider.trips.firstWhere(
-            (t) => t.id == widget.tripId,
-            orElse: () => throw Exception('Trip not found'),
-          );
+
+          Trip? trip;
+          try {
+            trip = provider.trips.firstWhere((t) => t.id == widget.tripId);
+          } catch (_) {
+            // If not found in loaded list, maybe show error or loading
+            return const Center(child: Text('Trip not found or loading...'));
+          }
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -98,9 +130,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 // Customer Info
                 Text(
                   'Customer Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -127,9 +159,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 // Route Information
                 Text(
                   'Route Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -145,7 +177,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                 color: Colors.blue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.location_on, color: Colors.blue),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.blue,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -180,7 +215,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
                                 color: Colors.green.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.location_on, color: Colors.green),
+                              child: const Icon(
+                                Icons.location_on,
+                                color: Colors.green,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -239,9 +277,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 // Cargo Information
                 Text(
                   'Cargo Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -256,10 +294,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                             value: '${trip.cargoWeight!.toStringAsFixed(0)} kg',
                           ),
                         if (trip.vehiclePlate != null)
-                          _InfoRow(
-                            label: 'Vehicle',
-                            value: trip.vehiclePlate!,
-                          ),
+                          _InfoRow(label: 'Vehicle', value: trip.vehiclePlate!),
                       ],
                     ),
                   ),
@@ -275,7 +310,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.info_outline, color: Colors.orange),
+                              const Icon(
+                                Icons.info_outline,
+                                color: Colors.orange,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Special Instructions',
@@ -298,9 +336,9 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 // Timeline
                 Text(
                   'Timeline',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -336,83 +374,38 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 ),
                 const SizedBox(height: 24),
 
-                // Earnings
-                if (trip.estimatedEarnings != null)
-                  Card(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Estimated Earnings',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              Text(
-                                'KES ${trip.estimatedEarnings!.toStringAsFixed(0)}',
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.green,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Icon(Icons.attach_money, size: 32, color: Colors.green),
-                        ],
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 32),
+                // Add padding for bottom bar
+                const SizedBox(height: 80),
+              ],
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: Consumer<DriverTripProvider>(
+        builder: (context, provider, _) {
+          if (provider.trips.isEmpty) return const SizedBox.shrink();
 
-                // Action Buttons
-                if (trip.isAssigned)
-                  FilledButton.icon(
-                    onPressed: () => _startTrip(context, trip.id),
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Start Trip'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                      backgroundColor: Colors.blue,
-                    ),
-                  ),
-                if (trip.isInTransit) ...[
-                  FilledButton.icon(
-                    onPressed: () => _completeTrip(context, trip.id),
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('Mark as Delivered'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                      backgroundColor: Colors.green,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
+          Trip? trip;
+          try {
+            trip = provider.trips.firstWhere((t) => t.id == widget.tripId);
+          } catch (_) {
+            return const SizedBox.shrink();
+          }
+
+          return SafeArea(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -4),
                   ),
                 ],
-                if (trip.isDelivered || trip.isCancelled)
-                  OutlinedButton.icon(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
-                  ),
-              ],
+              ),
+              child: _buildBottomActions(context, trip),
             ),
           );
         },
@@ -420,24 +413,70 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  Future<void> _startTrip(BuildContext context, String tripId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Start Trip'),
-        content: const Text('Are you ready to start this trip?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Start'),
+  Widget _buildBottomActions(BuildContext context, Trip trip) {
+    if (trip.isAssigned) {
+      return FilledButton.icon(
+        onPressed: () => _startTrip(context, trip.id),
+        icon: const Icon(Icons.play_arrow),
+        label: const Text('Start Trip'),
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(double.infinity, 56),
+          backgroundColor: Colors.blue,
+        ),
+      );
+    }
+
+    if (trip.isInTransit) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FilledButton.icon(
+            onPressed: () => _completeTrip(context, trip.id),
+            icon: const Icon(Icons.check_circle),
+            label: const Text('Mark as Delivered'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size(double.infinity, 56),
+              backgroundColor: Colors.green,
+            ),
           ),
         ],
-      ),
-    ) ?? false;
+      );
+    }
+
+    if (trip.isDelivered || trip.isCancelled) {
+      return OutlinedButton.icon(
+        onPressed: () => context.pop(),
+        icon: const Icon(Icons.arrow_back),
+        label: const Text('Back to Dashboard'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(double.infinity, 56),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  Future<void> _startTrip(BuildContext context, String tripId) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Start Trip'),
+            content: const Text('Are you ready to start this trip?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Start'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
 
     if (!confirmed) return;
 
@@ -450,46 +489,79 @@ class _TripDetailPageState extends State<TripDetailPage> {
           const SnackBar(content: Text('Trip started successfully')),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to start trip')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Failed to start trip')));
       }
     }
   }
 
   Future<void> _completeTrip(BuildContext context, String tripId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Complete Trip'),
-        content: const Text('Mark this trip as delivered?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Complete Trip'),
+            content: const Text(
+              'Mark this trip as delivered? This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Confirm Delivery'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('Complete'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirmed) return;
 
     if (!context.mounted) return;
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
     final provider = context.read<DriverTripProvider>();
     final success = await provider.updateTripStatus(tripId, 'delivered');
+
     if (context.mounted) {
+      Navigator.of(context).pop(); // Hide loading
+
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Trip completed successfully')),
+        await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+            title: const Text('Trip Completed'),
+            content: const Text(
+              'Great job! The trip has been marked as delivered.',
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  context.pop(); // Go back to list/dashboard
+                },
+                child: const Text('Back to Dashboard'),
+              ),
+            ],
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to complete trip')),
+          const SnackBar(
+            content: Text('Failed to complete trip. Please try again.'),
+          ),
         );
       }
     }
@@ -520,10 +592,7 @@ class _InfoRow extends StatelessWidget {
           children: [
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
             Row(
               children: [
@@ -574,14 +643,14 @@ class _TimelineItem extends StatelessWidget {
               color: isCompleted
                   ? Colors.green
                   : isEstimate
-                      ? Colors.orange
-                      : Colors.grey[300],
+                  ? Colors.orange
+                  : Colors.grey[300],
             ),
             child: isCompleted
                 ? const Icon(Icons.check, size: 16, color: Colors.white)
                 : isEstimate
-                    ? const Icon(Icons.schedule, size: 16, color: Colors.white)
-                    : null,
+                ? const Icon(Icons.schedule, size: 16, color: Colors.white)
+                : null,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -591,25 +660,21 @@ class _TimelineItem extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    fontWeight: isCompleted ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isCompleted
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                     fontSize: 14,
                   ),
                 ),
                 if (date != null)
                   Text(
                     DateFormat('MMM dd, yyyy • hh:mm a').format(date!),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   )
                 else
                   Text(
                     'Not yet',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[400],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
               ],
             ),

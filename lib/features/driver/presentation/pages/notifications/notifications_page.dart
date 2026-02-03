@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/driver_trip_provider.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
-import '../../../domain/models/trip_model.dart';
+import '../../../../common/domain/models/notification_model.dart';
 
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
@@ -13,24 +13,27 @@ class NotificationsPage extends StatelessWidget {
       builder: (context, provider, authProvider, _) {
         final notifications = _generateNotifications(provider, authProvider);
 
-        return Column(
-          children: [
-            _buildHeader(context, notifications),
-            Expanded(
-              child: notifications.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: notifications.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
-                      itemBuilder: (context, index) {
-                        return _NotificationCard(
-                          notification: notifications[index],
-                        );
-                      },
-                    ),
-            ),
-          ],
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildHeader(context, notifications),
+              if (notifications.isEmpty)
+                SizedBox(height: 400, child: _buildEmptyState())
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: notifications.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    return _NotificationCard(
+                      notification: notifications[index],
+                    );
+                  },
+                ),
+            ],
+          ),
         );
       },
     );
@@ -42,7 +45,7 @@ class NotificationsPage extends StatelessWidget {
   ) {
     final List<_NotificationData> list = [];
 
-    // Add Profile Incomplete Alert
+    // 1. Profile Incomplete Alert
     final user = authProvider.user;
     if (user != null && !user.isProfileComplete) {
       list.add(
@@ -58,81 +61,44 @@ class NotificationsPage extends StatelessWidget {
       );
     }
 
-    // Add Vehicle Maintenance Alert if applicable
-    final vehicle = provider.assignedVehicle;
-    if (vehicle != null && vehicle.needsMaintenance) {
-      final isOverdue = vehicle.isMaintenanceOverdue;
-      list.add(
-        _NotificationData(
-          id: 'maint-${vehicle.id}',
-          title: isOverdue
-              ? 'CRITICAL: Maintenance Overdue'
-              : 'Maintenance Required',
-          message: isOverdue
-              ? 'Your vehicle ${vehicle.registrationNumber} is overdue for maintenance! Please contact the workshop immediately.'
-              : 'Scheduled maintenance for ${vehicle.registrationNumber} is due soon (${vehicle.nextMaintenanceDate?.day}/${vehicle.nextMaintenanceDate?.month}).',
-          time: DateTime.now(),
-          type: NotificationType.maintenance,
-          isRead: false,
-        ),
-      );
+    // 2. Real DB Notifications
+    for (final note in provider.notifications) {
+      list.add(_mapDbNotification(note));
     }
 
-    // Sort all trips by date to get the "latest" events
-    final allTrips = List<Trip>.from(provider.trips)
-      ..sort((a, b) {
-        final dateA = a.deliveryDate ?? a.pickupDate ?? a.assignedDate;
-        final dateB = b.deliveryDate ?? b.pickupDate ?? b.assignedDate;
-        return dateB.compareTo(dateA);
-      });
-
-    for (final trip in allTrips) {
-      if (trip.isDelivered) {
-        list.add(
-          _NotificationData(
-            id: 'del-${trip.id}',
-            title: 'Mission Complete',
-            message:
-                'Delivery to ${trip.deliveryLocation} confirmed. KES ${trip.estimatedEarnings?.toStringAsFixed(0) ?? '0'} added to balance.',
-            time: trip.deliveryDate ?? DateTime.now(),
-            type: NotificationType.payment,
-            isRead: true,
-          ),
-        );
-      } else if (trip.isAssigned) {
-        list.add(
-          _NotificationData(
-            id: 'asg-${trip.id}',
-            title: 'New Mission Deployed',
-            message:
-                'Pickup at ${trip.pickupLocation} for ${trip.customerName}.',
-            time: trip.assignedDate,
-            type: NotificationType.tripAssigned,
-            isRead: false,
-          ),
-        );
-      } else if (trip.isInTransit) {
-        list.add(
-          _NotificationData(
-            id: 'trn-${trip.id}',
-            title: 'Operation In Progress',
-            message: 'Vehicle currently en route to ${trip.deliveryLocation}.',
-            time: trip.pickupDate ?? DateTime.now(),
-            type: NotificationType.tripAssigned,
-            isRead: true,
-          ),
-        );
-      }
-    }
+    // 3. Sort by Date (Latest First)
+    list.sort((a, b) => b.time.compareTo(a.time));
 
     return list;
+  }
+
+  _NotificationData _mapDbNotification(AppNotification note) {
+    NotificationType type = NotificationType.summary;
+    if (note.type == 'trip_assignment') type = NotificationType.tripAssigned;
+    if (note.type == 'alert') type = NotificationType.maintenance;
+    if (note.type == 'info') type = NotificationType.summary;
+
+    return _NotificationData(
+      id: note.id,
+      title: note.title,
+      message: note.message,
+      time: note.createdAt,
+      type: type,
+      isRead: note.isRead,
+      onTap: () {
+        // Handle tapping notification (e.g. navigation)
+      },
+    );
   }
 
   Widget _buildHeader(
     BuildContext context,
     List<_NotificationData> notifications,
   ) {
-    final unreadCount = notifications.where((n) => !n.isRead).length;
+    final unreadCount = notifications
+        .where((n) => !n.isRead && n.id != 'profile-incomplete')
+        .length;
+
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -142,17 +108,23 @@ class NotificationsPage extends StatelessWidget {
             '$unreadCount unread notifications',
             style: TextStyle(color: Colors.grey[600]),
           ),
-          TextButton(
-            onPressed: () {
-              // Mark all as read
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All notifications marked as read'),
-                ),
-              );
-            },
-            child: const Text('Mark all read'),
-          ),
+          if (unreadCount > 0)
+            TextButton(
+              onPressed: () {
+                final provider = Provider.of<DriverTripProvider>(
+                  context,
+                  listen: false,
+                );
+                provider.markAllNotificationsAsRead();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('All notifications marked as read'),
+                  ),
+                );
+              },
+              child: const Text('Mark all read'),
+            ),
         ],
       ),
     );
@@ -181,6 +153,7 @@ class _NotificationData {
   final DateTime time;
   final NotificationType type;
   final bool isRead;
+  final VoidCallback? onTap;
 
   _NotificationData({
     required this.id,
@@ -189,6 +162,7 @@ class _NotificationData {
     required this.time,
     required this.type,
     required this.isRead,
+    this.onTap,
   });
 }
 
@@ -200,60 +174,89 @@ class _NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: notification.isRead ? 1 : 3,
-      color: notification.isRead ? null : Colors.orange.withValues(alpha: 0.05),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: _getTypeColor(notification.type).withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+      elevation: notification.isRead ? 1 : 2,
+      // Use stronger color for unread items
+      color: notification.isRead ? Colors.white : Colors.blue.shade50,
+      margin: const EdgeInsets.only(
+        bottom: 4,
+      ), // Add margin back if separated view removes it? No, separated adds space.
+      child: InkWell(
+        onTap: () {
+          if (!notification.isRead && notification.id != 'profile-incomplete') {
+            context.read<DriverTripProvider>().markNotificationAsRead(
+              notification.id,
+            );
+          }
+          notification.onTap?.call();
+        },
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 8,
           ),
-          child: Icon(
-            _getTypeIcon(notification.type),
-            color: _getTypeColor(notification.type),
-            size: 24,
+          leading: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              // Increased opacity for better visibility
+              color: _getTypeColor(notification.type).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _getTypeIcon(notification.type),
+              color: _getTypeColor(
+                notification.type,
+              ).withValues(alpha: 1.0), // Full color icon
+              size: 24,
+            ),
           ),
-        ),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                notification.title,
-                style: TextStyle(
-                  fontWeight: notification.isRead
-                      ? FontWeight.normal
-                      : FontWeight.bold,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  notification.title,
+                  style: TextStyle(
+                    fontWeight: notification.isRead
+                        ? FontWeight.w600
+                        : FontWeight.bold,
+                    fontSize: 16,
+                    color: Colors.black87,
+                  ),
                 ),
               ),
-            ),
-            if (!notification.isRead)
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Colors.orange,
-                  shape: BoxShape.circle,
+              if (!notification.isRead)
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade700,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withValues(alpha: 0.4),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
                 ),
+            ],
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                notification.message,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              notification.message,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _formatTime(notification.time),
-              style: TextStyle(color: Colors.grey[500], fontSize: 12),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                _formatTime(notification.time),
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+            ],
+          ),
         ),
       ),
     );

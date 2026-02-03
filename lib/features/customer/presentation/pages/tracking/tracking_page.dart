@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/customer_order_provider.dart';
+import '../../../../chat/presentation/pages/chat_page.dart';
 
 class TrackingPage extends StatelessWidget {
   const TrackingPage({super.key});
@@ -149,6 +150,21 @@ class _TrackingCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ChatPage(
+                          trackingNumber: order.trackingNumber ?? order.id,
+                          currentUserRole: 'customer',
+                          currentUserName: order.customerName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),

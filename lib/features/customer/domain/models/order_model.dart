@@ -49,28 +49,28 @@ class Order {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       'id': id,
-      'customerId': customerId,
-      'customerName': customerName,
-      'pickupLocation': pickupLocation,
-      'deliveryLocation': deliveryLocation,
+      'customer_id': customerId,
+      'customer_name': customerName,
+      'pickup_location': pickupLocation,
+      'delivery_location': deliveryLocation,
       'status': status,
-      'orderDate': orderDate.toIso8601String(),
-      'pickupDate': pickupDate?.toIso8601String(),
-      'deliveryDate': deliveryDate?.toIso8601String(),
-      'estimatedDelivery': estimatedDelivery?.toIso8601String(),
-      'driverId': driverId,
-      'driverName': driverName,
-      'vehiclePlate': vehiclePlate,
-      'cargoType': cargoType,
-      'cargoWeight': cargoWeight,
-      'specialInstructions': specialInstructions,
+      'order_date': orderDate.toIso8601String(),
+      'pickup_date': pickupDate?.toIso8601String(),
+      'delivery_date': deliveryDate?.toIso8601String(),
+      'estimated_delivery': estimatedDelivery?.toIso8601String(),
+      'driver_id': driverId,
+      'driver_name': driverName,
+      'vehicle_plate': vehiclePlate,
+      'cargo_type': cargoType,
+      'cargo_weight': cargoWeight,
+      'special_instructions': specialInstructions,
       'distance': distance,
-      'totalCost': totalCost,
-      'trackingNumber': trackingNumber,
+      'total_cost': totalCost,
+      'tracking_number': trackingNumber,
     };
 
     if (additionalInfo != null) {
-      data['additionalInfo'] = additionalInfo;
+      data['additional_info'] = additionalInfo;
     }
 
     return data;
@@ -79,31 +79,38 @@ class Order {
   factory Order.fromJson(Map<String, dynamic> json) {
     return Order(
       id: json['id'],
-      customerId: json['customerId'],
-      customerName: json['customerName'],
-      pickupLocation: json['pickupLocation'],
-      deliveryLocation: json['deliveryLocation'],
+      customerId: json['customer_id'] ?? json['customerId'],
+      customerName: json['customer_name'] ?? json['customerName'],
+      pickupLocation: json['pickup_location'] ?? json['pickupLocation'],
+      deliveryLocation: json['delivery_location'] ?? json['deliveryLocation'],
       status: json['status'] ?? 'pending',
-      orderDate: DateTime.parse(json['orderDate']),
-      pickupDate: json['pickupDate'] != null
-          ? DateTime.parse(json['pickupDate'])
-          : null,
-      deliveryDate: json['deliveryDate'] != null
-          ? DateTime.parse(json['deliveryDate'])
-          : null,
-      estimatedDelivery: json['estimatedDelivery'] != null
-          ? DateTime.parse(json['estimatedDelivery'])
-          : null,
-      driverId: json['driverId'],
-      driverName: json['driverName'],
-      vehiclePlate: json['vehiclePlate'],
-      cargoType: json['cargoType'],
-      cargoWeight: json['cargoWeight']?.toDouble(),
-      specialInstructions: json['specialInstructions'],
-      distance: json['distance']?.toDouble(),
-      totalCost: (json['totalCost'] ?? 0.0).toDouble(),
-      trackingNumber: json['trackingNumber'],
-      additionalInfo: json['additionalInfo'],
+      orderDate: DateTime.parse(json['order_date'] ?? json['orderDate']),
+      pickupDate: json['pickup_date'] != null
+          ? DateTime.parse(json['pickup_date'])
+          : (json['pickupDate'] != null
+                ? DateTime.parse(json['pickupDate'])
+                : null),
+      deliveryDate: json['delivery_date'] != null
+          ? DateTime.parse(json['delivery_date'])
+          : (json['deliveryDate'] != null
+                ? DateTime.parse(json['deliveryDate'])
+                : null),
+      estimatedDelivery: json['estimated_delivery'] != null
+          ? DateTime.parse(json['estimated_delivery'])
+          : (json['estimatedDelivery'] != null
+                ? DateTime.parse(json['estimatedDelivery'])
+                : null),
+      driverId: json['driver_id'] ?? json['driverId'],
+      driverName: json['driver_name'] ?? json['driverName'],
+      vehiclePlate: json['vehicle_plate'] ?? json['vehiclePlate'],
+      cargoType: json['cargo_type'] ?? json['cargoType'],
+      cargoWeight: (json['cargo_weight'] ?? json['cargoWeight'])?.toDouble(),
+      specialInstructions:
+          json['special_instructions'] ?? json['specialInstructions'],
+      distance: (json['distance'])?.toDouble(),
+      totalCost: (json['total_cost'] ?? json['totalCost'] ?? 0.0).toDouble(),
+      trackingNumber: json['tracking_number'] ?? json['trackingNumber'],
+      additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
 

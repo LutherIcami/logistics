@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/trip_model.dart';
 import '../../data/repositories/trip_repository.dart';
@@ -6,22 +7,30 @@ import '../../../admin/domain/models/driver_model.dart';
 import '../../../admin/domain/models/vehicle_model.dart';
 import '../../../admin/data/repositories/driver_repository.dart';
 import '../../../admin/data/repositories/vehicle_repository.dart';
+import '../../../../features/common/domain/repositories/notification_repository.dart';
+import '../../../../features/common/domain/models/notification_model.dart';
+import 'dart:async';
 
 class DriverTripProvider extends ChangeNotifier {
   DriverTripProvider()
     : _tripRepository = di.sl<TripRepository>(),
       _driverRepository = di.sl<DriverRepository>(),
-      _vehicleRepository = di.sl<VehicleRepository>();
+      _vehicleRepository = di.sl<VehicleRepository>(),
+      _notificationRepository = di.sl<NotificationRepository>();
 
   final TripRepository _tripRepository;
   final DriverRepository _driverRepository;
   final VehicleRepository _vehicleRepository;
+  final NotificationRepository _notificationRepository;
 
   // Current logged-in driver (in real app, this would come from auth)
   String? _currentDriverId;
   Driver? _currentDriver;
   Vehicle? _assignedVehicle;
   List<Trip> _trips = [];
+  List<AppNotification> _notifications = [];
+  StreamSubscription? _notificationSubscription;
+  StreamSubscription? _tripSubscription;
   bool _isLoading = false;
   String? _error;
 
@@ -29,6 +38,7 @@ class DriverTripProvider extends ChangeNotifier {
   Driver? get currentDriver => _currentDriver;
   Vehicle? get assignedVehicle => _assignedVehicle;
   List<Trip> get trips => _trips;
+  List<AppNotification> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -46,16 +56,28 @@ class DriverTripProvider extends ChangeNotifier {
   int get totalTrips => _trips.length;
   int get activeTrips => assignedTrips.length + inTransitTrips.length;
 
+  // Notification State
+
+  void markNotificationAsRead(String id) async {
+    try {
+      await _notificationRepository.markAsRead(id);
+      // Optimistic update
+      final index = _notifications.indexWhere((n) => n.id == id);
+      if (index != -1) {
+        // We can't modify the object since it's final, but the stream should update it.
+        // However, for immediate UI feedback we can rely on stream or manual trigger
+      }
+    } catch (_) {}
+  }
+
+  void markAllNotificationsAsRead() async {
+    for (final n in _notifications.where((n) => !n.isRead)) {
+      markNotificationAsRead(n.id);
+    }
+  }
+
   int get unreadNotificationCount {
-    int count = 0;
-    // Maintenance alert is a global unread state
-    if (hasMaintenanceAlert) count++;
-
-    // Unassigned (new) trips are considered unread notifications
-    // Using isAssigned as a proxy for "Needs Action/Unread"
-    count += assignedTrips.length;
-
-    return count;
+    return _notifications.where((n) => !n.isRead).length;
   }
 
   double getEarningsForPeriod(String period) {
@@ -155,12 +177,45 @@ class DriverTripProvider extends ChangeNotifier {
         _assignedVehicle = null;
       }
       await loadTrips();
+      _initTripStream();
+      _initNotificationStream();
       _error = null;
     } catch (e) {
       _error = e.toString().replaceAll('Exception: ', '');
     } finally {
       _setLoading(false);
     }
+  }
+
+  void _initTripStream() {
+    _tripSubscription?.cancel();
+    if (_currentDriverId == null) return;
+
+    _tripSubscription = _tripRepository.streamTrips(_currentDriverId!).listen((
+      data,
+    ) {
+      _trips = data;
+      notifyListeners();
+    });
+  }
+
+  void _initNotificationStream() {
+    _notificationSubscription?.cancel();
+    if (_currentDriverId == null) return;
+
+    _notificationSubscription = _notificationRepository
+        .streamNotifications(_currentDriverId!)
+        .listen((data) {
+          _notifications = data;
+          notifyListeners();
+        });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    _tripSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> initializeDriverProfile(String name, String email) async {
@@ -255,6 +310,20 @@ class DriverTripProvider extends ChangeNotifier {
       _error = 'Failed to update status';
       notifyListeners();
       return false;
+    }
+  }
+
+  Future<String?> uploadProfileImage(File image) async {
+    if (_currentDriverId == null) return null;
+    try {
+      return await _driverRepository.uploadProfileImage(
+        _currentDriverId!,
+        image,
+      );
+    } catch (e) {
+      _error = 'Failed to upload profile image';
+      notifyListeners();
+      return null;
     }
   }
 

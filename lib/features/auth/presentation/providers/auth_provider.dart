@@ -129,12 +129,38 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
+  // Notification State
+  final Set<String> _readNotificationIds = {};
+
+  bool isNotificationRead(String id) => _readNotificationIds.contains(id);
+
+  void markNotificationAsRead(String id) {
+    if (!_readNotificationIds.contains(id)) {
+      _readNotificationIds.add(id);
+      notifyListeners();
+    }
+  }
+
+  void markAllNotificationsAsRead(List<String> ids) {
+    bool changed = false;
+    for (final id in ids) {
+      if (!_readNotificationIds.contains(id)) {
+        _readNotificationIds.add(id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
 
     await _authRepository.logout();
     _user = null;
+    _readNotificationIds.clear();
 
     _isLoading = false;
     notifyListeners();

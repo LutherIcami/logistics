@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../domain/models/order_model.dart';
 import '../../domain/models/customer_model.dart';
@@ -12,6 +13,7 @@ class CustomerOrderProvider extends ChangeNotifier {
 
   final OrderRepository _orderRepository;
   final CustomerRepository _customerRepository;
+  StreamSubscription<List<Order>>? _subscription;
 
   // Current logged-in customer (in real app, this would come from auth)
   String? _currentCustomerId;
@@ -25,6 +27,22 @@ class CustomerOrderProvider extends ChangeNotifier {
   List<Order> get orders => _orders;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
+  void _initRealtimeSubscription() {
+    if (_currentCustomerId == null) return;
+    _subscription?.cancel();
+    _subscription = _orderRepository.streamOrders().listen((data) {
+      // Filter for this customer
+      _orders = data.where((o) => o.customerId == _currentCustomerId).toList();
+      notifyListeners();
+    });
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   // Filtered orders by status
   List<Order> get pendingOrders =>
@@ -44,11 +62,48 @@ class CustomerOrderProvider extends ChangeNotifier {
       .where((o) => o.isDelivered)
       .fold(0.0, (sum, order) => sum + order.totalCost);
 
+  // Notification State
+  final Set<String> _readNotificationIds = {};
+
+  bool isNotificationRead(String id) => _readNotificationIds.contains(id);
+
+  void markNotificationAsRead(String id) {
+    if (!_readNotificationIds.contains(id)) {
+      _readNotificationIds.add(id);
+      notifyListeners();
+    }
+  }
+
+  void markAllNotificationsAsRead(List<String> ids) {
+    bool changed = false;
+    for (final id in ids) {
+      if (!_readNotificationIds.contains(id)) {
+        _readNotificationIds.add(id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
   int get unreadNotificationCount {
     int count = 0;
-    // For customers, we can count pending orders that need attention
-    // or status changes that haven't been "seen" (simplified for now)
-    count += pendingOrders.length;
+
+    // Count pending orders
+    for (final order in pendingOrders) {
+      if (!isNotificationRead('pnd-${order.id}')) {
+        count++;
+      }
+    }
+
+    // Count in transit orders
+    for (final order in activeOrders) {
+      if (order.isInTransit && !isNotificationRead('trn-${order.id}')) {
+        count++;
+      }
+    }
+
     return count;
   }
 
@@ -58,6 +113,7 @@ class CustomerOrderProvider extends ChangeNotifier {
     try {
       _currentCustomer = await _customerRepository.getCustomerById(customerId);
       await loadOrders();
+      _initRealtimeSubscription();
       _error = null;
     } catch (e) {
       _error = 'Failed to load customer data';
@@ -73,8 +129,20 @@ class CustomerOrderProvider extends ChangeNotifier {
       _orders = await _orderRepository.getOrdersByCustomerId(
         _currentCustomerId!,
       );
+      print(
+        'DEBUG: Loaded ${_orders.length} orders for customer $_currentCustomerId',
+      );
+      print('DEBUG: Pending orders: ${pendingOrders.length}');
+      print('DEBUG: Active orders: ${activeOrders.length}');
+      print('DEBUG: Completed orders: ${completedOrders.length}');
+      if (_orders.isNotEmpty) {
+        print(
+          'DEBUG: First order ID: ${_orders.first.id}, Status: ${_orders.first.status}',
+        );
+      }
       _error = null;
     } catch (e) {
+      print('DEBUG: Error loading orders: $e');
       _error = 'Failed to load orders';
     } finally {
       _setLoading(false);

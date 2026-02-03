@@ -80,6 +80,25 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
+  Future<void> _selectDate(
+    BuildContext context,
+    TextEditingController controller,
+  ) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      // Format as YYYY-MM-DD
+      setState(() {
+        controller.text =
+            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -101,8 +120,13 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
       return;
     }
 
-    // TODO: Upload _profileImage to server and get URL
-    // For now, we'll just update the other fields
+    String? profileImageUrl = currentDriver.profileImage;
+    if (_profileImage != null) {
+      final url = await provider.uploadProfileImage(_profileImage!);
+      if (url != null) {
+        profileImageUrl = url;
+      }
+    }
 
     final updatedDriver = currentDriver.copyWith(
       name: _nameController.text.trim(),
@@ -120,6 +144,7 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
       currentVehicle: _currentVehicleController.text.trim().isEmpty
           ? null
           : _currentVehicleController.text.trim(),
+      profileImage: profileImageUrl,
       status: _status,
     );
 
@@ -176,7 +201,10 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
               // Profile Image Section
               Center(
                 child: ProfileImagePicker(
-                  currentImageUrl: null, // TODO: Get from driver model
+                  currentImageUrl: context
+                      .read<DriverTripProvider>()
+                      .currentDriver
+                      ?.profileImage,
                   placeholderText: _getInitials(
                     _nameController.text.isNotEmpty
                         ? _nameController.text
@@ -261,6 +289,8 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
                 label: 'License Expiry Date',
                 icon: Icons.calendar_today,
                 hintText: 'YYYY-MM-DD',
+                readOnly: true,
+                onTap: () => _selectDate(context, _licenseExpiryController),
               ),
               const SizedBox(height: 24),
 
@@ -343,11 +373,15 @@ class _DriverEditFormPageState extends State<DriverEditFormPage> {
     TextInputType? keyboardType,
     String? hintText,
     String? Function(String?)? validator,
+    bool readOnly = false,
+    VoidCallback? onTap,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
       validator: validator,
+      readOnly: readOnly,
+      onTap: onTap,
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,

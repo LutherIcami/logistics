@@ -1,0 +1,62 @@
+Supabase CLI 2.74.5
+
+Usage:
+  supabase [command]
+
+Quick Start:
+  bootstrap            Bootstrap a Supabase project from a starter template
+
+Local Development:
+  db                   Manage Postgres databases
+  gen                  Run code generation tools
+  init                 Initialize a local project
+  inspect              Tools to inspect your Supabase project
+  link                 Link to a Supabase project
+  login                Authenticate using an access token
+  logout               Log out and delete access tokens locally
+  migration            Manage database migration scripts
+  seed                 Seed a Supabase project from supabase\config.toml
+  services             Show versions of all Supabase services
+  start                Start containers for Supabase local development
+  status               Show status of local Supabase containers
+  stop                 Stop all local Supabase containers
+  test                 Run tests on local Supabase containers
+  unlink               Unlink a Supabase project
+
+Management APIs:
+  backups              Manage Supabase physical backups
+  branches             Manage Supabase preview branches
+  config               Manage Supabase project configurations
+  domains              Manage custom domain names for Supabase projects
+  encryption           Manage encryption keys of Supabase projects
+  functions            Manage Supabase Edge functions
+  network-bans         Manage network bans
+  network-restrictions Manage network restrictions
+  orgs                 Manage Supabase organizations
+  postgres-config      Manage Postgres database config
+  projects             Manage Supabase projects
+  secrets              Manage Supabase secrets
+  snippets             Manage Supabase SQL snippets
+  ssl-enforcement      Manage SSL enforcement configuration
+  sso                  Manage Single Sign-On (SSO) authentication for projects
+  storage              Manage Supabase Storage objects
+  vanity-subdomains    Manage vanity subdomains for Supabase projects
+
+Additional Commands:
+  completion           Generate the autocompletion script for the specified shell
+  help                 Help about any command
+
+Flags:
+      --create-ticket                                  create a support ticket for any CLI error
+      --debug                                          output debug logs to stderr
+      --dns-resolver [ native | https ]                lookup domain names using the specified resolver (default native)
+      --experimental                                   enable experimental features
+  -h, --help                                           help for supabase
+      --network-id string                              use the specified docker network instead of a generated one
+  -o, --output [ env | pretty | json | toml | yaml ]   output format of status variables (default pretty)
+      --profile string                                 use a specific profile for connecting to Supabase API (default "supabase")
+  -v, --version                                        version for supabase
+      --workdir string                                 path to a Supabase project directory
+      --yes                                            answer yes to all prompts
+
+Use "supabase [command] --help" for more information about a command.

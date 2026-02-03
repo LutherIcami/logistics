@@ -13,7 +13,7 @@ class SupabaseOrderRepository implements OrderRepository {
       final response = await client
           .from('orders')
           .select()
-          .order('orderDate', ascending: false);
+          .order('order_date', ascending: false);
       return (response as List).map((json) => Order.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch orders: $e');
@@ -26,8 +26,8 @@ class SupabaseOrderRepository implements OrderRepository {
       final response = await client
           .from('orders')
           .select()
-          .eq('customerId', customerId)
-          .order('orderDate', ascending: false);
+          .eq('customer_id', customerId)
+          .order('order_date', ascending: false);
       return (response as List).map((json) => Order.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch orders: $e');
@@ -87,5 +87,14 @@ class SupabaseOrderRepository implements OrderRepository {
     } catch (e) {
       throw Exception('Failed to cancel order: $e');
     }
+  }
+
+  @override
+  Stream<List<Order>> streamOrders() {
+    return client
+        .from('orders')
+        .stream(primaryKey: ['id'])
+        .order('order_date', ascending: false)
+        .map((data) => data.map((json) => Order.fromJson(json)).toList());
   }
 }

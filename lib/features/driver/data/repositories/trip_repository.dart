@@ -8,6 +8,7 @@ abstract class TripRepository {
   Future<Trip> updateTripStatus(String tripId, String status);
   Future<Trip> updateTrip(Trip trip);
   Future<Trip> createTrip(Trip trip);
+  Stream<List<Trip>> streamTrips(String driverId);
 }
 
 /// Simple in-memory mock implementation for local/testing use.
@@ -148,5 +149,12 @@ class MockTripRepository implements TripRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     _trips.add(trip);
     return trip;
+  }
+
+  @override
+  Stream<List<Trip>> streamTrips(String driverId) {
+    return Stream.value(
+      _trips.where((trip) => trip.driverId == driverId).toList(),
+    );
   }
 }
