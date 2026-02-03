@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../providers/finance_provider.dart';
 import '../../../domain/models/finance_models.dart';
+import '../base_module_page.dart';
 
 class TransactionsListPage extends StatefulWidget {
   const TransactionsListPage({super.key});
@@ -106,15 +107,15 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text('Cash Ledger'),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: const Color(0xFF0F172A),
+    return BaseModulePage(
+      title: 'Cash Ledger',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/admin/finance/transactions/new'),
+        backgroundColor: const Color(0xFF1E293B),
+        label: const Text('New Entry', style: TextStyle(color: Colors.white)),
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
       ),
-      body: Consumer<FinanceProvider>(
+      child: Consumer<FinanceProvider>(
         builder: (context, provider, _) {
           final filteredData = provider.transactions.where((tx) {
             final query = _searchQuery.toLowerCase();
@@ -214,12 +215,6 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
             ],
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/admin/finance/transactions/new'),
-        backgroundColor: const Color(0xFF1E293B),
-        label: const Text('New Entry', style: TextStyle(color: Colors.white)),
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
       ),
     );
   }

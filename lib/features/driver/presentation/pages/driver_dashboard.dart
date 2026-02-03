@@ -8,6 +8,7 @@ import 'profile/driver_profile_page.dart';
 import 'earnings/earnings_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'notifications/notifications_page.dart';
+import '../../../../core/widgets/responsive.dart';
 
 class DriverDashboard extends StatefulWidget {
   const DriverDashboard({super.key});
@@ -302,72 +303,28 @@ class _DriverDashboardState extends State<DriverDashboard> {
       );
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Welcome Card
-          _buildWelcomeCard(driver),
-          const SizedBox(height: 12),
-
-          // Maintenance Alert
-          if (provider.hasMaintenanceAlert) ...[
-            _buildMaintenanceBanner(provider),
-            const SizedBox(height: 24),
-          ] else
-            const SizedBox(height: 24),
-
-          // Quick Stats
-          Text(
-            'OVERVIEW',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildStatsGrid(provider, driver),
-          const SizedBox(height: 24),
-
-          // Quick Actions
-          Text(
-            'QUICK ACTIONS',
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF64748B),
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildQuickActions(provider),
-          const SizedBox(height: 24),
-
-          // Active Trip (if any)
-          if (provider.inTransitTrips.isNotEmpty) ...[
-            Text(
-              'ACTIVE TRIP',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF64748B),
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _ActiveTripCard(trip: provider.inTransitTrips.first),
-            const SizedBox(height: 24),
-          ],
-
-          // Recent Trips
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Welcome Card
+              _buildWelcomeCard(driver),
+              const SizedBox(height: 12),
+
+              // Maintenance Alert
+              if (provider.hasMaintenanceAlert) ...[
+                _buildMaintenanceBanner(provider),
+                const SizedBox(height: 24),
+              ] else
+                const SizedBox(height: 24),
+
+              // Quick Stats
               Text(
-                'RECENT TRIPS',
+                'OVERVIEW',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -375,27 +332,76 @@ class _DriverDashboardState extends State<DriverDashboard> {
                   letterSpacing: 1.5,
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  setState(() {
-                    _currentIndex = 1;
-                  });
-                },
-                child: const Text('View All'),
+              const SizedBox(height: 16),
+              _buildStatsGrid(provider, driver),
+              const SizedBox(height: 24),
+
+              // Quick Actions
+              Text(
+                'QUICK ACTIONS',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF64748B),
+                  letterSpacing: 1.5,
+                ),
               ),
+              const SizedBox(height: 16),
+              _buildQuickActions(provider),
+              const SizedBox(height: 24),
+
+              // Active Trip (if any)
+              if (provider.inTransitTrips.isNotEmpty) ...[
+                Text(
+                  'ACTIVE TRIP',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _ActiveTripCard(trip: provider.inTransitTrips.first),
+                const SizedBox(height: 24),
+              ],
+
+              // Recent Trips
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'RECENT TRIPS',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF64748B),
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _currentIndex = 1;
+                      });
+                    },
+                    child: const Text('View All'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (provider.trips.isEmpty)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(32),
+                    child: Text('No trips assigned yet'),
+                  ),
+                )
+              else
+                ...provider.trips.take(3).map((trip) => _TripCard(trip: trip)),
             ],
           ),
-          const SizedBox(height: 16),
-          if (provider.trips.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('No trips assigned yet'),
-              ),
-            )
-          else
-            ...provider.trips.take(3).map((trip) => _TripCard(trip: trip)),
-        ],
+        ),
       ),
     );
   }
@@ -675,100 +681,127 @@ class _DriverDashboardState extends State<DriverDashboard> {
   }
 
   Widget _buildStatsGrid(DriverTripProvider provider, dynamic driver) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                title: 'Active',
-                value: '${provider.activeTrips}',
-                icon: Icons.local_shipping,
-                color: Colors.blue,
+    var stats = [
+      _StatCard(
+        title: 'Active',
+        value: '${provider.activeTrips}',
+        icon: Icons.local_shipping,
+        color: Colors.blue,
+      ),
+      _StatCard(
+        title: 'Completed',
+        value: '${provider.completedTrips.length}',
+        icon: Icons.check_circle,
+        color: Colors.green,
+      ),
+      _StatCard(
+        title: 'This Week',
+        value: 'KES ${(provider.weekEarnings / 1000).toStringAsFixed(1)}k',
+        icon: Icons.attach_money,
+        color: Colors.orange,
+      ),
+      _StatCard(
+        title: 'Distance',
+        value: '${provider.totalDistance.toStringAsFixed(0)} km',
+        icon: Icons.straighten,
+        color: Colors.purple,
+      ),
+    ];
+
+    return Responsive(
+      mobile: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: stats[0]),
+              const SizedBox(width: 12),
+              Expanded(child: stats[1]),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: stats[2]),
+              const SizedBox(width: 12),
+              Expanded(child: stats[3]),
+            ],
+          ),
+        ],
+      ),
+      desktop: Row(
+        children: stats
+            .map(
+              (s) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: s,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                title: 'Completed',
-                value: '${provider.completedTrips.length}',
-                icon: Icons.check_circle,
-                color: Colors.green,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _StatCard(
-                title: 'This Week',
-                value:
-                    'KES ${(provider.weekEarnings / 1000).toStringAsFixed(1)}k',
-                icon: Icons.attach_money,
-                color: Colors.orange,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _StatCard(
-                title: 'Distance',
-                value: '${provider.totalDistance.toStringAsFixed(0)} km',
-                icon: Icons.straighten,
-                color: Colors.purple,
-              ),
-            ),
-          ],
-        ),
-      ],
+            )
+            .toList(),
+      ),
     );
   }
 
   Widget _buildQuickActions(DriverTripProvider provider) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionCard(
-            title: 'Fuel Report',
-            icon: Icons.local_gas_station_rounded,
-            color: Colors.orange,
-            onTap: () => context.push('/driver/fuel-report'),
-          ),
+    var actions = [
+      _ActionCard(
+        title: 'Fuel Report',
+        icon: Icons.local_gas_station_rounded,
+        color: Colors.orange,
+        onTap: () => context.push('/driver/fuel-report'),
+      ),
+      _ActionCard(
+        title: 'Service/Repair',
+        icon: Icons.build_rounded,
+        color: Colors.blue,
+        onTap: () => context.push('/driver/maintenance-report'),
+      ),
+      _ActionCard(
+        title: 'Support',
+        icon: Icons.headset_mic,
+        color: Colors.green,
+        onTap: () async {
+          final Uri launchUri = Uri(scheme: 'tel', path: '0700000000');
+          if (await canLaunchUrl(launchUri)) {
+            await launchUrl(launchUri);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Cannot launch dialer')),
+              );
+            }
+          }
+        },
+      ),
+    ];
+
+    return Responsive(
+      mobile: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: actions
+              .map(
+                (a) => Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: SizedBox(width: 120, child: a),
+                ),
+              )
+              .toList(),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionCard(
-            title: 'Service/Repair',
-            icon: Icons.build_rounded,
-            color: Colors.blue,
-            onTap: () => context.push('/driver/maintenance-report'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionCard(
-            title: 'Support',
-            icon: Icons.headset_mic,
-            color: Colors.green,
-            onTap: () async {
-              final Uri launchUri = Uri(
-                scheme: 'tel',
-                path: '0700000000',
-              ); // Central Support
-              if (await canLaunchUrl(launchUri)) {
-                await launchUrl(launchUri);
-              } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cannot launch dialer')),
-                  );
-                }
-              }
-            },
-          ),
-        ),
-      ],
+      ),
+      desktop: Row(
+        children: actions
+            .map(
+              (a) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: a,
+                ),
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 }

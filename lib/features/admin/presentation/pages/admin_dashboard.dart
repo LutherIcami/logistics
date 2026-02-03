@@ -8,6 +8,7 @@ import '../providers/finance_provider.dart';
 import '../widgets/admin_module_card.dart';
 import '../widgets/admin_stat_card.dart';
 import '../../../../core/widgets/profile_completion_banner.dart';
+import '../../../../core/widgets/responsive.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -27,33 +28,36 @@ class AdminDashboard extends StatelessWidget {
           const SliverToBoxAdapter(child: ProfileCompletionBanner()),
           _buildAppBar(context, user),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('Network Vitals'),
-                  const SizedBox(height: 16),
-                  _buildVitalsRow(
-                    context,
-                    vehicleProvider,
-                    financeProvider,
-                    shipmentProvider,
-                  ),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Priority Directives'),
-                  const SizedBox(height: 16),
-                  _buildQuickActions(context),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Operational Command'),
-                  const SizedBox(height: 16),
-                  _buildModuleGrid(context),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Live Terminal Activity'),
-                  const SizedBox(height: 16),
-                  _buildActivityFeed(),
-                  const SizedBox(height: 60),
-                ],
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildSectionTitle('Network Vitals'),
+                    const SizedBox(height: 16),
+                    _buildVitalsRow(
+                      context,
+                      vehicleProvider,
+                      financeProvider,
+                      shipmentProvider,
+                    ),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Priority Directives'),
+                    const SizedBox(height: 16),
+                    _buildQuickActions(context),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Operational Command'),
+                    const SizedBox(height: 16),
+                    _buildModuleGrid(context),
+                    const SizedBox(height: 32),
+                    _buildSectionTitle('Live Terminal Activity'),
+                    const SizedBox(height: 16),
+                    _buildActivityFeed(),
+                    const SizedBox(height: 60),
+                  ],
+                ),
               ),
             ),
           ),
@@ -193,62 +197,107 @@ class AdminDashboard extends StatelessWidget {
     FinanceProvider fp,
     ShipmentProvider sp,
   ) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          AdminStatCard(
-            title: 'Queued Loads',
-            value: '${sp.pendingCount} New',
-            icon: Icons.inventory_2_rounded,
-            color: Colors.orange,
-            onTap: () => context.go('/admin/shipments'),
-          ),
-          const SizedBox(width: 16),
-          AdminStatCard(
-            title: 'Active Missions',
-            value: '${sp.activeCount} In Transit',
-            icon: Icons.radar_rounded,
-            color: Colors.blue,
-            onTap: () => context.go('/admin/shipments'),
-          ),
-          const SizedBox(width: 16),
-          AdminStatCard(
-            title: 'Personnel Ready',
-            value: '${sp.assignedCount} Assigned',
-            icon: Icons.person_pin_rounded,
-            color: Colors.purple,
-            onTap: () => context.go('/admin/drivers'),
-          ),
-        ],
+    var cards = [
+      AdminStatCard(
+        title: 'Queued Loads',
+        value: '${sp.pendingCount} New',
+        icon: Icons.inventory_2_rounded,
+        color: Colors.orange,
+        onTap: () => context.go('/admin/shipments'),
+      ),
+      AdminStatCard(
+        title: 'Active Missions',
+        value: '${sp.activeCount} In Transit',
+        icon: Icons.radar_rounded,
+        color: Colors.blue,
+        onTap: () => context.go('/admin/shipments'),
+      ),
+      AdminStatCard(
+        title: 'Personnel Ready',
+        value: '${sp.assignedCount} Assigned',
+        icon: Icons.person_pin_rounded,
+        color: Colors.purple,
+        onTap: () => context.go('/admin/drivers'),
+      ),
+    ];
+
+    return Responsive(
+      mobile: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: cards
+              .map(
+                (c) => Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: SizedBox(width: 280, child: c),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+      desktop: Row(
+        children: cards
+            .map(
+              (c) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: c,
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        _QuickActionBtn(
-          icon: Icons.add_task_rounded,
-          label: 'Assign Trip',
-          onTap: () => context.go('/admin/shipments'),
-          color: Colors.indigo,
+    var actions = [
+      _QuickActionBtn(
+        icon: Icons.add_task_rounded,
+        label: 'Assign Trip',
+        onTap: () => context.go('/admin/shipments'),
+        color: Colors.indigo,
+      ),
+      _QuickActionBtn(
+        icon: Icons.person_add_alt_1_rounded,
+        label: 'Deploy Driver',
+        onTap: () => context.push('/admin/drivers/add'),
+        color: Colors.teal,
+      ),
+      _QuickActionBtn(
+        icon: Icons.post_add_rounded,
+        label: 'New Invoice',
+        onTap: () => context.go('/admin/finance'),
+        color: Colors.amber[700]!,
+      ),
+    ];
+
+    return Responsive(
+      mobile: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: actions
+              .map(
+                (a) => Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: SizedBox(width: 140, child: a),
+                ),
+              )
+              .toList(),
         ),
-        const SizedBox(width: 12),
-        _QuickActionBtn(
-          icon: Icons.person_add_alt_1_rounded,
-          label: 'Deploy Driver',
-          onTap: () => context.push('/admin/drivers/add'),
-          color: Colors.teal,
-        ),
-        const SizedBox(width: 12),
-        _QuickActionBtn(
-          icon: Icons.post_add_rounded,
-          label: 'New Invoice',
-          onTap: () => context.go('/admin/finance'),
-          color: Colors.amber[700]!,
-        ),
-      ],
+      ),
+      desktop: Row(
+        children: actions
+            .map(
+              (a) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: a,
+                ),
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
@@ -256,7 +305,7 @@ class AdminDashboard extends StatelessWidget {
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
+      crossAxisCount: Responsive.isDesktop(context) ? 4 : 2,
       crossAxisSpacing: 16,
       mainAxisSpacing: 16,
       childAspectRatio: 1.1,

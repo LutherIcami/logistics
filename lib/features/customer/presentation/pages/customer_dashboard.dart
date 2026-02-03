@@ -8,6 +8,7 @@ import 'orders/orders_list_page.dart';
 import 'tracking/tracking_page.dart';
 import 'invoices/invoices_page.dart';
 import 'support/support_page.dart';
+import '../../../../core/widgets/responsive.dart';
 
 class CustomerDashboard extends StatefulWidget {
   const CustomerDashboard({super.key});
@@ -274,9 +275,14 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   ) {
     switch (_currentIndex) {
       case 0:
-        return SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: _buildDashboardView(context, provider),
+        return Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 1200),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: _buildDashboardView(context, provider),
+            ),
+          ),
         );
       case 1:
         return const OrdersListPage();
@@ -369,31 +375,52 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
   // NOTE: removed _buildWelcomeCard as logic moved to AppBar
 
   Widget _buildStatsGrid(CustomerOrderProvider provider) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          _StatCard(
-            title: 'Active Orders',
-            value: '${provider.activeOrdersCount}',
-            icon: Icons.local_shipping_outlined,
-            color: Colors.blue,
-          ),
-          const SizedBox(width: 16),
-          _StatCard(
-            title: 'Pending',
-            value: '${provider.pendingOrdersCount}',
-            icon: Icons.pending_actions_outlined,
-            color: Colors.orange,
-          ),
-          const SizedBox(width: 16),
-          _StatCard(
-            title: 'Total Spent',
-            value: 'KES ${(provider.totalSpent / 1000).toStringAsFixed(1)}k',
-            icon: Icons.account_balance_wallet_outlined,
-            color: Colors.purple,
-          ),
-        ],
+    var stats = [
+      _StatCard(
+        title: 'Active Orders',
+        value: '${provider.activeOrdersCount}',
+        icon: Icons.local_shipping_outlined,
+        color: Colors.blue,
+      ),
+      _StatCard(
+        title: 'Pending',
+        value: '${provider.pendingOrdersCount}',
+        icon: Icons.pending_actions_outlined,
+        color: Colors.orange,
+      ),
+      _StatCard(
+        title: 'Total Spent',
+        value: 'KES ${(provider.totalSpent / 1000).toStringAsFixed(1)}k',
+        icon: Icons.account_balance_wallet_outlined,
+        color: Colors.purple,
+      ),
+    ];
+
+    return Responsive(
+      mobile: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: stats
+              .map(
+                (s) => Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: SizedBox(width: 160, child: s),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+      desktop: Row(
+        children: stats
+            .map(
+              (s) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: s,
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -402,35 +429,52 @@ class _CustomerDashboardState extends State<CustomerDashboard> {
     BuildContext context,
     CustomerOrderProvider provider,
   ) {
-    return Row(
-      children: [
-        Expanded(
-          child: _ActionCard(
-            title: 'New Order',
-            icon: Icons.add_circle_outline,
-            color: Colors.teal,
-            onTap: () => context.push('/customer/orders/new'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionCard(
-            title: 'Track',
-            icon: Icons.gps_fixed,
-            color: Colors.blue,
-            onTap: () => setState(() => _currentIndex = 2),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _ActionCard(
-            title: 'Invoices',
-            icon: Icons.receipt_long_outlined,
-            color: Colors.deepPurple,
-            onTap: () => setState(() => _currentIndex = 3),
-          ),
-        ),
-      ],
+    var actions = [
+      _ActionCard(
+        title: 'New Order',
+        icon: Icons.add_circle_outline,
+        color: Colors.teal,
+        onTap: () => context.push('/customer/orders/new'),
+      ),
+      _ActionCard(
+        title: 'Track',
+        icon: Icons.gps_fixed,
+        color: Colors.blue,
+        onTap: () => setState(() => _currentIndex = 2),
+      ),
+      _ActionCard(
+        title: 'Invoices',
+        icon: Icons.receipt_long_outlined,
+        color: Colors.deepPurple,
+        onTap: () => setState(() => _currentIndex = 3),
+      ),
+    ];
+
+    return Responsive(
+      mobile: Row(
+        children: actions
+            .map(
+              (a) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: a,
+                ),
+              ),
+            )
+            .toList(),
+      ),
+      desktop: Row(
+        children: actions
+            .map(
+              (a) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: a,
+                ),
+              ),
+            )
+            .toList(),
+      ),
     );
   }
 
@@ -489,7 +533,6 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 160,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),

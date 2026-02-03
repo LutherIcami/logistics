@@ -53,7 +53,14 @@ class BaseModulePage extends StatelessWidget {
       body: Column(
         children: [
           const ProfileCompletionBanner(),
-          Expanded(child: child),
+          Expanded(
+            child: Center(
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: child,
+              ),
+            ),
+          ),
         ],
       ),
     );

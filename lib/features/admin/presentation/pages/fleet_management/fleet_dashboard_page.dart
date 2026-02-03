@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/vehicle_provider.dart';
 import '../base_module_page.dart';
+import '../../../../../core/widgets/responsive.dart';
 
 class FleetDashboardPage extends StatefulWidget {
   const FleetDashboardPage({super.key});
@@ -51,32 +52,27 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                 const SizedBox(height: 20),
 
                 // Horizontal Stats
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
+                Builder(
+                  builder: (context) {
+                    final stats = [
                       _CompactStatCard(
                         title: 'Total Assets',
                         value: '${provider.totalVehicles}',
                         icon: Icons.local_shipping_rounded,
                         color: Colors.blue,
                       ),
-                      const SizedBox(width: 16),
                       _CompactStatCard(
                         title: 'Operational',
                         value: '${provider.activeVehiclesCount}',
                         icon: Icons.check_circle_rounded,
                         color: Colors.green,
                       ),
-                      const SizedBox(width: 16),
                       _CompactStatCard(
                         title: 'Maintenance',
                         value: '${provider.maintenanceVehiclesCount}',
                         icon: Icons.build_circle_rounded,
                         color: Colors.orange,
                       ),
-                      const SizedBox(width: 16),
                       _CompactStatCard(
                         title: 'Fleet Value',
                         value:
@@ -84,8 +80,37 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                         icon: Icons.account_balance_rounded,
                         color: Colors.purple,
                       ),
-                    ],
-                  ),
+                    ];
+
+                    return Responsive(
+                      mobile: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: stats
+                              .map(
+                                (s) => Padding(
+                                  padding: const EdgeInsets.only(right: 16),
+                                  child: SizedBox(width: 160, child: s),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                      desktop: Row(
+                        children: stats
+                            .map(
+                              (s) => Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 16),
+                                  child: s,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    );
+                  },
                 ),
 
                 const SizedBox(height: 32),
@@ -159,7 +184,7 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                 GridView.count(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
+                  crossAxisCount: Responsive.isDesktop(context) ? 4 : 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
                   childAspectRatio: 1.4,
@@ -175,6 +200,18 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                       icon: Icons.event_note_rounded,
                       color: Colors.indigo,
                       onTap: () => context.push('/admin/fleet/maintenance'),
+                    ),
+                    _MenuActionCard(
+                      title: 'Fuel Logs',
+                      icon: Icons.local_gas_station_rounded,
+                      color: Colors.orange,
+                      onTap: () => context.push('/admin/fleet/fuel'),
+                    ),
+                    _MenuActionCard(
+                      title: 'Analytics',
+                      icon: Icons.analytics_rounded,
+                      color: Colors.purple,
+                      onTap: () {},
                     ),
                   ],
                 ),
@@ -241,7 +278,6 @@ class _CompactStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 160,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
