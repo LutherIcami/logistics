@@ -174,6 +174,7 @@ class FinancePage extends StatelessWidget {
             icon: Icons.account_balance_rounded,
             color: Colors.green,
             trend: '+12.4%',
+            onTap: () => context.push('/admin/reports/financial'),
           ),
           const SizedBox(width: 16),
           _FinanceStatCard(
@@ -182,6 +183,7 @@ class FinancePage extends StatelessWidget {
             icon: Icons.pie_chart_rounded,
             color: Colors.indigo,
             trend: 'Direct Cut',
+            onTap: () => context.push('/admin/finance/transactions'),
           ),
           const SizedBox(width: 16),
           _FinanceStatCard(
@@ -190,6 +192,7 @@ class FinancePage extends StatelessWidget {
             icon: Icons.payments_rounded,
             color: Colors.orange,
             trend: '-2.1%',
+            onTap: () => context.push('/admin/reports/financial'),
           ),
           const SizedBox(width: 16),
           _FinanceStatCard(
@@ -198,6 +201,7 @@ class FinancePage extends StatelessWidget {
             icon: Icons.analytics_rounded,
             color: Colors.blue,
             trend: '+8.5%',
+            onTap: () => context.push('/admin/reports/financial'),
           ),
           const SizedBox(width: 16),
           _FinanceStatCard(
@@ -206,6 +210,7 @@ class FinancePage extends StatelessWidget {
             icon: Icons.hourglass_bottom_rounded,
             color: Colors.purple,
             trend: '15 items',
+            onTap: () => context.push('/admin/finance/invoices'),
           ),
         ],
       ),
@@ -240,6 +245,7 @@ class _FinanceStatCard extends StatelessWidget {
   final IconData icon;
   final Color color;
   final String trend;
+  final VoidCallback? onTap;
 
   const _FinanceStatCard({
     required this.title,
@@ -247,69 +253,73 @@ class _FinanceStatCard extends StatelessWidget {
     required this.icon,
     required this.color,
     required this.trend,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              Text(
-                trend,
-                style: TextStyle(
-                  color: trend.contains('+')
-                      ? Colors.green
-                      : (trend.contains('-') ? Colors.red : Colors.grey),
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'KES ${amount.toStringAsFixed(0)}',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 200,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-              fontWeight: FontWeight.w500,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                Text(
+                  trend,
+                  style: TextStyle(
+                    color: trend.contains('+')
+                        ? Colors.green
+                        : (trend.contains('-') ? Colors.red : Colors.grey),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              'KES ${amount.toStringAsFixed(0)}',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -351,7 +361,7 @@ class _InvoiceListItem extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.all(16),
-        onTap: () => context.push('/admin/finance/invoices'),
+        onTap: () => context.push('/admin/finance/invoices/${invoice.id}'),
         leading: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(

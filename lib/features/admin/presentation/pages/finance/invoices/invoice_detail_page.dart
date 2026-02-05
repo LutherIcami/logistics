@@ -342,7 +342,8 @@ class InvoiceDetailPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 if (invoice.status == InvoiceStatus.sent ||
-                    invoice.status == InvoiceStatus.draft) ...[
+                    invoice.status == InvoiceStatus.draft ||
+                    invoice.status == InvoiceStatus.overdue) ...[
                   Row(
                     children: [
                       if (invoice.status == InvoiceStatus.draft) ...[

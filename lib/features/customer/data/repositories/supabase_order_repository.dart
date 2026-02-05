@@ -78,12 +78,13 @@ class SupabaseOrderRepository implements OrderRepository {
   }
 
   @override
-  Future<void> cancelOrder(String orderId) async {
+  Future<void> cancelOrder(String orderId, {String? reason}) async {
     try {
-      await client
-          .from('orders')
-          .update({'status': 'cancelled'})
-          .eq('id', orderId);
+      final updates = {'status': 'cancelled'};
+      if (reason != null) {
+        updates['cancellation_reason'] = reason;
+      }
+      await client.from('orders').update(updates).eq('id', orderId);
     } catch (e) {
       throw Exception('Failed to cancel order: $e');
     }

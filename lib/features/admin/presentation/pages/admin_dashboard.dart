@@ -5,6 +5,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../providers/shipment_provider.dart';
 import '../providers/finance_provider.dart';
+import '../providers/admin_customer_provider.dart';
 import '../widgets/admin_module_card.dart';
 import '../widgets/admin_stat_card.dart';
 import '../../../../core/widgets/profile_completion_banner.dart';
@@ -18,6 +19,7 @@ class AdminDashboard extends StatelessWidget {
     final vehicleProvider = context.watch<VehicleProvider>();
     final shipmentProvider = context.watch<ShipmentProvider>();
     final financeProvider = context.watch<FinanceProvider>();
+    final customerProvider = context.watch<AdminCustomerProvider>();
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.user;
 
@@ -42,6 +44,7 @@ class AdminDashboard extends StatelessWidget {
                       vehicleProvider,
                       financeProvider,
                       shipmentProvider,
+                      customerProvider,
                     ),
                     const SizedBox(height: 32),
                     _buildSectionTitle('Priority Directives'),
@@ -196,6 +199,7 @@ class AdminDashboard extends StatelessWidget {
     VehicleProvider vp,
     FinanceProvider fp,
     ShipmentProvider sp,
+    AdminCustomerProvider cp,
   ) {
     var cards = [
       AdminStatCard(
@@ -218,6 +222,13 @@ class AdminDashboard extends StatelessWidget {
         icon: Icons.person_pin_rounded,
         color: Colors.purple,
         onTap: () => context.go('/admin/drivers'),
+      ),
+      AdminStatCard(
+        title: 'Active Clients',
+        value: '${cp.customerCount} Active',
+        icon: Icons.people_alt_rounded,
+        color: Colors.cyan,
+        onTap: () => context.go('/admin/customers'),
       ),
     ];
 
@@ -269,6 +280,12 @@ class AdminDashboard extends StatelessWidget {
         label: 'New Invoice',
         onTap: () => context.go('/admin/finance'),
         color: Colors.amber[700]!,
+      ),
+      _QuickActionBtn(
+        icon: Icons.person_add_rounded,
+        label: 'Register Client',
+        onTap: () => context.push('/admin/customers/add'),
+        color: Colors.cyan[700]!,
       ),
     ];
 
@@ -330,6 +347,13 @@ class AdminDashboard extends StatelessWidget {
           icon: Icons.radar_rounded,
           color: Colors.purple,
           onTap: () => context.go('/admin/shipments'),
+        ),
+        AdminModuleCard(
+          title: 'Clients',
+          subtitle: 'Acquisition & CRM',
+          icon: Icons.people_alt_rounded,
+          color: Colors.cyan,
+          onTap: () => context.go('/admin/customers'),
         ),
         AdminModuleCard(
           title: 'Financials',

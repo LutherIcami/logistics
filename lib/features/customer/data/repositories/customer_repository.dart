@@ -7,6 +7,7 @@ abstract class CustomerRepository {
   Future<List<Customer>> getCustomers();
   Future<Customer?> getCustomerById(String id);
   Future<Customer> updateCustomer(Customer customer);
+  Future<void> deleteCustomer(String id);
   Future<String> uploadProfileImage(String customerId, File image);
 }
 
@@ -109,6 +110,15 @@ class SupabaseCustomerRepository implements CustomerRepository {
       return imageUrl;
     } catch (e) {
       throw Exception('Failed to upload profile image: $e');
+    }
+  }
+
+  @override
+  Future<void> deleteCustomer(String id) async {
+    try {
+      await client.from('customers').delete().eq('id', id);
+    } catch (e) {
+      throw Exception('Failed to delete customer: $e');
     }
   }
 }

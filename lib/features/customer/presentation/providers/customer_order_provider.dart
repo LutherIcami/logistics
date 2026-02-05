@@ -5,15 +5,18 @@ import '../../domain/models/order_model.dart';
 import '../../domain/models/customer_model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../../data/repositories/customer_repository.dart';
+import '../../../driver/data/repositories/trip_repository.dart';
 import '../../../../app/di/injection_container.dart' as di;
 
 class CustomerOrderProvider extends ChangeNotifier {
   CustomerOrderProvider()
     : _orderRepository = di.sl<OrderRepository>(),
-      _customerRepository = di.sl<CustomerRepository>();
+      _customerRepository = di.sl<CustomerRepository>(),
+      _tripRepository = di.sl<TripRepository>();
 
   final OrderRepository _orderRepository;
   final CustomerRepository _customerRepository;
+  final TripRepository _tripRepository;
   StreamSubscription<List<Order>>? _subscription;
 
   // Current logged-in customer (in real app, this would come from auth)
@@ -180,13 +183,28 @@ class CustomerOrderProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> cancelOrder(String orderId) async {
+  Future<bool> cancelOrder(String orderId, {String? reason}) async {
     try {
-      await _orderRepository.cancelOrder(orderId);
+      // 1. Get order details to check if it has a driver assigned
+      final order = await getOrderById(orderId);
+
+      // 2. Perform the cancellation in the orders table
+      await _orderRepository.cancelOrder(orderId, reason: reason);
+
+      // 3. If it was assigned/in-transit, also update the trip status
+      if (order != null &&
+          (order.driverId != null || order.isAssigned || order.isInTransit)) {
+        try {
+          await _tripRepository.updateTripStatus(orderId, 'cancelled');
+        } catch (e) {
+          debugPrint('Note: Trip cancellation failed (might not exist): $e');
+        }
+      }
+
       await loadOrders(); // Reload to get updated status
       return true;
     } catch (e) {
-      _error = 'Failed to cancel order';
+      _error = 'Failed to cancel order: ${e.toString()}';
       notifyListeners();
       return false;
     }

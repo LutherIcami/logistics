@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_customer_provider.dart';
+import '../../providers/shipment_provider.dart';
 import '../../../../customer/domain/models/customer_model.dart';
 import '../../../../customer/domain/models/contract_model.dart';
 import '../../../../customer/domain/models/pricing_model.dart';
@@ -23,7 +24,7 @@ class _CustomerDetailAdminPageState extends State<CustomerDetailAdminPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -58,11 +59,17 @@ class _CustomerDetailAdminPageState extends State<CustomerDetailAdminPage>
                 onPressed: () =>
                     context.go('/admin/customers/${customer.id}/edit'),
               ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                onPressed: () => _confirmDelete(context, provider, customer),
+              ),
             ],
             bottom: TabBar(
               controller: _tabController,
+              isScrollable: true,
               tabs: const [
-                Tab(text: 'Details'),
+                Tab(text: 'Overview'),
+                Tab(text: 'Shipments'),
                 Tab(text: 'Contracts'),
                 Tab(text: 'Pricing'),
               ],
@@ -72,6 +79,7 @@ class _CustomerDetailAdminPageState extends State<CustomerDetailAdminPage>
             controller: _tabController,
             children: [
               _buildDetailsTab(customer),
+              _buildShipmentsTab(context, customer.id),
               _buildContractsTab(context, provider, customer.id),
               _buildPricingTab(context, provider, customer.id),
             ],
@@ -121,20 +129,195 @@ class _CustomerDetailAdminPageState extends State<CustomerDetailAdminPage>
             ),
           ]),
           const SizedBox(height: 16),
-          _buildInfoCard('Statistics', [
-            _buildInfoRow(
-              Icons.shopping_bag,
-              'Total Orders',
-              customer.totalOrders.toString(),
-            ),
-            _buildInfoRow(
-              Icons.attach_money,
-              'Total Spent',
-              customer.totalSpent.toStringAsFixed(2),
+          _buildInfoCard('Business Intelligence', [
+            Builder(
+              builder: (context) {
+                final shipmentProvider = context.watch<ShipmentProvider>();
+                final customerOrders = shipmentProvider.shipments
+                    .where((s) => s.customerId == customer.id)
+                    .toList();
+                final completedOrders = customerOrders
+                    .where((s) => s.isDelivered)
+                    .length;
+                final totalRevenue = customerOrders
+                    .where((s) => s.isDelivered)
+                    .fold(0.0, (sum, s) => sum + s.totalCost);
+
+                return Column(
+                  children: [
+                    _buildInfoRow(
+                      Icons.shopping_bag_rounded,
+                      'Total Bookings',
+                      '${customerOrders.length} Orders',
+                    ),
+                    _buildInfoRow(
+                      Icons.task_alt_rounded,
+                      'Successfully Fulfilled',
+                      '$completedOrders Completed',
+                    ),
+                    _buildInfoRow(
+                      Icons.account_balance_wallet_rounded,
+                      'Total Revenue Contribution',
+                      'KES ${totalRevenue.toStringAsFixed(0)}',
+                    ),
+                  ],
+                );
+              },
             ),
           ]),
+          const SizedBox(height: 16),
+          _buildRecentShipments(context, customer.id),
         ],
       ),
+    );
+  }
+
+  Widget _buildRecentShipments(BuildContext context, String customerId) {
+    final shipmentProvider = context.watch<ShipmentProvider>();
+    final customerOrders = shipmentProvider.shipments
+        .where((s) => s.customerId == customerId)
+        .toList();
+
+    return _buildInfoCard('Recent Activity', [
+      if (customerOrders.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20),
+          child: Center(
+            child: Text(
+              'No shipment history available',
+              style: TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+          ),
+        )
+      else
+        ...customerOrders.take(5).map((order) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: order.statusColor.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    order.statusIcon,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'To: ${order.deliveryLocation}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        order.cargoType,
+                        style: TextStyle(color: Colors.grey[600], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'KES ${order.totalCost.toStringAsFixed(0)}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    _buildStatusBadge(
+                      order.statusDisplayText,
+                      order.statusColor,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        }),
+    ]);
+  }
+
+  Widget _buildStatusBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShipmentsTab(BuildContext context, String customerId) {
+    final shipmentProvider = context.watch<ShipmentProvider>();
+    final orders = shipmentProvider.shipments
+        .where((s) => s.customerId == customerId)
+        .toList();
+
+    if (orders.isEmpty) {
+      return const Center(child: Text('No shipments found for this client'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: orders.length,
+      itemBuilder: (context, index) {
+        final order = orders[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: Icon(
+              order.isDelivered ? Icons.check_circle : Icons.local_shipping,
+              color: order.statusColor,
+            ),
+            title: Text(order.cargoType),
+            subtitle: Text('To: ${order.deliveryLocation}'),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'KES ${order.totalCost.toStringAsFixed(0)}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  order.statusDisplayText,
+                  style: TextStyle(color: order.statusColor, fontSize: 10),
+                ),
+              ],
+            ),
+            onTap: () => context.go('/admin/shipments/${order.id}'),
+          ),
+        );
+      },
     );
   }
 
@@ -408,5 +591,57 @@ class _CustomerDetailAdminPageState extends State<CustomerDetailAdminPage>
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    AdminCustomerProvider provider,
+    Customer customer,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Customer?'),
+        content: Text(
+          'Are you sure you want to delete ${customer.name}? This action cannot be undone and will remove all associated data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => context.pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      final success = await provider.deleteCustomer(customer.id);
+      if (context.mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Customer deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          context.go('/admin/customers');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to delete customer'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }

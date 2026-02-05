@@ -17,7 +17,7 @@ class _OrdersListPageState extends State<OrdersListPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -40,22 +40,16 @@ class _OrdersListPageState extends State<OrdersListPage>
               controller: _tabController,
               isScrollable: true,
               labelColor: Theme.of(context).colorScheme.primary,
-              unselectedLabelColor:
-                  Theme.of(context).colorScheme.onSurfaceVariant,
+              unselectedLabelColor: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant,
               indicatorColor: Theme.of(context).colorScheme.primary,
               tabs: [
-                Tab(
-                  text: 'All (${provider.totalOrders})',
-                ),
-                Tab(
-                  text: 'Active (${provider.activeOrdersCount})',
-                ),
-                Tab(
-                  text: 'Pending (${provider.pendingOrdersCount})',
-                ),
-                Tab(
-                  text: 'Completed (${provider.completedOrders.length})',
-                ),
+                Tab(text: 'All (${provider.totalOrders})'),
+                Tab(text: 'Active (${provider.activeOrdersCount})'),
+                Tab(text: 'Pending (${provider.pendingOrdersCount})'),
+                Tab(text: 'Completed (${provider.completedOrders.length})'),
+                Tab(text: 'Cancelled (${provider.cancelledOrders.length})'),
               ],
             ),
             Expanded(
@@ -66,6 +60,7 @@ class _OrdersListPageState extends State<OrdersListPage>
                   _buildOrdersList(provider.activeOrders),
                   _buildOrdersList(provider.pendingOrders),
                   _buildOrdersList(provider.completedOrders),
+                  _buildOrdersList(provider.cancelledOrders),
                 ],
               ),
             ),
@@ -90,10 +85,7 @@ class _OrdersListPageState extends State<OrdersListPage>
             const SizedBox(height: 16),
             Text(
               'No orders found',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey[600], fontSize: 16),
             ),
           ],
         ),
@@ -148,7 +140,11 @@ class _OrderListItem extends StatelessWidget {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.qr_code, size: 14, color: Colors.grey[600]),
+                              Icon(
+                                Icons.qr_code,
+                                size: 14,
+                                color: Colors.grey[600],
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 order.trackingNumber!,
@@ -206,7 +202,11 @@ class _OrderListItem extends StatelessWidget {
                       color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.location_on, size: 16, color: Colors.blue),
+                    child: const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.blue,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -243,7 +243,11 @@ class _OrderListItem extends StatelessWidget {
                       color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.location_on, size: 16, color: Colors.green),
+                    child: const Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: Colors.green,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(

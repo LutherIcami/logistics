@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/admin_customer_provider.dart';
+import '../../providers/shipment_provider.dart';
 import '../base_module_page.dart';
 
 class CustomersPage extends StatefulWidget {
@@ -152,6 +153,12 @@ class _CustomerListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final shipmentProvider = context.watch<ShipmentProvider>();
+    final customerOrders = shipmentProvider.shipments
+        .where((s) => s.customerId == customer.id)
+        .toList();
+    final completedOrders = customerOrders.where((s) => s.isDelivered).length;
+
     final displayName = customer.companyName ?? customer.name;
     final initials = (customer.name as String).substring(0, 1).toUpperCase();
 
@@ -170,7 +177,7 @@ class _CustomerListItem extends StatelessWidget {
       ),
       child: ListTile(
         onTap: () => context.go('/admin/customers/${customer.id}'),
-        contentPadding: const EdgeInsets.all(12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
           width: 50,
           height: 50,
@@ -204,14 +211,25 @@ class _CustomerListItem extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (customer.companyName != null)
-              Text(
-                customer.name,
-                style: TextStyle(color: Colors.grey[500], fontSize: 11),
-              ),
             Text(
               customer.email,
-              style: TextStyle(color: Colors.blue[400], fontSize: 11),
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _buildStatChip(
+                  Icons.inventory_2_outlined,
+                  '${customerOrders.length} Orders',
+                  Colors.blue,
+                ),
+                const SizedBox(width: 8),
+                _buildStatChip(
+                  Icons.check_circle_outline_rounded,
+                  '$completedOrders Done',
+                  Colors.green,
+                ),
+              ],
             ),
           ],
         ),
@@ -220,6 +238,32 @@ class _CustomerListItem extends StatelessWidget {
           size: 14,
           color: Color(0xFFE2E8F0),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatChip(IconData icon, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }

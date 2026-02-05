@@ -21,6 +21,7 @@ class Order {
   final double? distance; // in km
   final double totalCost;
   final String? trackingNumber;
+  final String? cancellationReason;
   final Map<String, dynamic>? additionalInfo;
 
   Order({
@@ -43,6 +44,7 @@ class Order {
     this.distance,
     required this.totalCost,
     this.trackingNumber,
+    this.cancellationReason,
     this.additionalInfo,
   });
 
@@ -67,6 +69,7 @@ class Order {
       'distance': distance,
       'total_cost': totalCost,
       'tracking_number': trackingNumber,
+      'cancellation_reason': cancellationReason,
     };
 
     if (additionalInfo != null) {
@@ -110,6 +113,8 @@ class Order {
       distance: (json['distance'])?.toDouble(),
       totalCost: (json['total_cost'] ?? json['totalCost'] ?? 0.0).toDouble(),
       trackingNumber: json['tracking_number'] ?? json['trackingNumber'],
+      cancellationReason:
+          json['cancellation_reason'] ?? json['cancellationReason'],
       additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
@@ -134,6 +139,7 @@ class Order {
     double? distance,
     double? totalCost,
     String? trackingNumber,
+    String? cancellationReason,
     Map<String, dynamic>? additionalInfo,
   }) {
     return Order(
@@ -156,6 +162,7 @@ class Order {
       distance: distance ?? this.distance,
       totalCost: totalCost ?? this.totalCost,
       trackingNumber: trackingNumber ?? this.trackingNumber,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
       additionalInfo: additionalInfo ?? this.additionalInfo,
     );
   }

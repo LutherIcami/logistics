@@ -17,6 +17,7 @@ class AdminCustomerProvider extends ChangeNotifier {
 
   bool get isLoading => _isLoading;
   String? get error => _error;
+  int get customerCount => _customers.length;
   List<Customer> get customers => _filteredCustomers;
 
   AdminCustomerProvider() : _repository = di.sl<CustomerRepository>() {
@@ -83,6 +84,20 @@ class AdminCustomerProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = 'Failed to update customer';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> deleteCustomer(String id) async {
+    try {
+      await _repository.deleteCustomer(id);
+      _customers.removeWhere((c) => c.id == id);
+      search(''); // Update filter
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to delete customer';
       notifyListeners();
       return false;
     }

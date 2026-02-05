@@ -499,12 +499,28 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Future<void> _cancelOrder(BuildContext context, String orderId) async {
+    final reasonController = TextEditingController();
     final confirmed =
         await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Cancel Order'),
-            content: const Text('Are you sure you want to cancel this order?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Are you sure you want to cancel this order?'),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  decoration: const InputDecoration(
+                    labelText: 'Reason (Optional)',
+                    hintText: 'e.g., Changed my mind, schedule conflict',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+              ],
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -524,7 +540,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
     if (!context.mounted) return;
     final provider = context.read<CustomerOrderProvider>();
-    final success = await provider.cancelOrder(orderId);
+    final success = await provider.cancelOrder(
+      orderId,
+      reason: reasonController.text.trim().isEmpty
+          ? null
+          : reasonController.text.trim(),
+    );
     if (context.mounted) {
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
