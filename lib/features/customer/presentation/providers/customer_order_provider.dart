@@ -7,16 +7,21 @@ import '../../data/repositories/order_repository.dart';
 import '../../data/repositories/customer_repository.dart';
 import '../../../driver/data/repositories/trip_repository.dart';
 import '../../../../app/di/injection_container.dart' as di;
+import '../../../../features/common/domain/repositories/notification_repository.dart';
+import '../../../../features/common/domain/models/notification_model.dart';
+import 'package:uuid/uuid.dart';
 
 class CustomerOrderProvider extends ChangeNotifier {
   CustomerOrderProvider()
     : _orderRepository = di.sl<OrderRepository>(),
       _customerRepository = di.sl<CustomerRepository>(),
-      _tripRepository = di.sl<TripRepository>();
+      _tripRepository = di.sl<TripRepository>(),
+      _notificationRepository = di.sl<NotificationRepository>();
 
   final OrderRepository _orderRepository;
   final CustomerRepository _customerRepository;
   final TripRepository _tripRepository;
+  final NotificationRepository _notificationRepository;
   StreamSubscription<List<Order>>? _subscription;
 
   // Current logged-in customer (in real app, this would come from auth)
@@ -195,7 +200,16 @@ class CustomerOrderProvider extends ChangeNotifier {
 
   Future<bool> confirmDelivery(String orderId) async {
     try {
+      // 1. Update the order status
       await _orderRepository.confirmDelivery(orderId);
+
+      // 2. Update the corresponding trip status if it exists
+      try {
+        await _tripRepository.updateTripStatus(orderId, 'delivered');
+      } catch (e) {
+        debugPrint('Note: Trip status update failed or not found: $e');
+      }
+
       await loadOrders(); // Reload to get updated status
       return true;
     } catch (e) {
@@ -221,13 +235,38 @@ class CustomerOrderProvider extends ChangeNotifier {
       // 2. Perform the cancellation in the orders table
       await _orderRepository.cancelOrder(orderId, reason: reason);
 
-      // 3. If it was assigned/in-transit, also update the trip status
-      if (order != null &&
-          (order.driverId != null || order.isAssigned || order.isInTransit)) {
+      final isAssignedOrInTransit =
+          order != null &&
+          (order.driverId != null || order.isAssigned || order.isInTransit);
+
+      // 3. If it was assigned/in-transit, notify driver and update trip
+      if (isAssignedOrInTransit) {
+        // Update trip status
         try {
           await _tripRepository.updateTripStatus(orderId, 'cancelled');
         } catch (e) {
           debugPrint('Note: Trip cancellation failed (might not exist): $e');
+        }
+
+        // Notify driver if assigned
+        if (order!.driverId != null) {
+          try {
+            const uuid = Uuid();
+            final notification = AppNotification(
+              id: uuid.v4(),
+              userId: order.driverId!,
+              title: 'Order Cancelled',
+              message:
+                  'Customer has cancelled the order for ${order.cargoType} to ${order.deliveryLocation}.',
+              type: 'alert',
+              relatedEntityId: order.id,
+              isRead: false,
+              createdAt: DateTime.now(),
+            );
+            await _notificationRepository.sendNotification(notification);
+          } catch (e) {
+            debugPrint('Failed to notify driver of cancellation: $e');
+          }
         }
       }
 

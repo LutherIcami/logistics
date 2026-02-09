@@ -194,9 +194,10 @@ class ShipmentProvider extends ChangeNotifier {
       // 1. Update the order (Will now throw if database rejects it)
       await updateShipment(updatedShipment);
 
-      // 2. Create a trip for the driver
-      final tripId =
-          shipmentId; // Use Order ID as Trip ID for perfect sync link
+      // 2. Create or Update a trip for the driver
+      final tripId = shipmentId;
+      final existingTrip = await _tripRepository.getTripById(tripId);
+
       final newTrip = Trip(
         id: tripId,
         driverId: driverId,
@@ -215,7 +216,11 @@ class ShipmentProvider extends ChangeNotifier {
         trackingNumber: shipment.trackingNumber,
       );
 
-      await _tripRepository.createTrip(newTrip);
+      if (existingTrip == null) {
+        await _tripRepository.createTrip(newTrip);
+      } else {
+        await _tripRepository.updateTrip(newTrip);
+      }
 
       // 3. Create a notification for the driver
       const uuid = Uuid();

@@ -60,23 +60,35 @@ class Order {
       'delivery_location': deliveryLocation,
       'status': status,
       'order_date': orderDate.toIso8601String(),
-      'pickup_date': pickupDate?.toIso8601String(),
-      'delivery_date': deliveryDate?.toIso8601String(),
-      'estimated_delivery': estimatedDelivery?.toIso8601String(),
-      'driver_id': driverId,
-      'driver_name': driverName,
-      'vehicle_plate': vehiclePlate,
       'cargo_type': cargoType,
-      'cargo_weight': cargoWeight,
-      'special_instructions': specialInstructions,
-      'distance': distance,
       'total_cost': totalCost,
-      'tracking_number': trackingNumber,
-      'cancellation_reason': cancellationReason,
-      'company_commission': companyCommission,
-      'driver_payout': driverPayout,
     };
 
+    if (pickupDate != null) {
+      data['pickup_date'] = pickupDate!.toIso8601String();
+    }
+    if (deliveryDate != null) {
+      data['delivery_date'] = deliveryDate!.toIso8601String();
+    }
+    if (estimatedDelivery != null) {
+      data['estimated_delivery'] = estimatedDelivery!.toIso8601String();
+    }
+    if (driverId != null) data['driver_id'] = driverId;
+    if (driverName != null) data['driver_name'] = driverName;
+    if (vehiclePlate != null) data['vehicle_plate'] = vehiclePlate;
+    if (cargoWeight != null) data['cargo_weight'] = cargoWeight;
+    if (specialInstructions != null) {
+      data['special_instructions'] = specialInstructions;
+    }
+    if (distance != null) data['distance'] = distance;
+    if (trackingNumber != null) data['tracking_number'] = trackingNumber;
+    if (cancellationReason != null) {
+      data['cancellation_reason'] = cancellationReason;
+    }
+    if (companyCommission != null) {
+      data['company_commission'] = companyCommission;
+    }
+    if (driverPayout != null) data['driver_payout'] = driverPayout;
     if (additionalInfo != null) {
       data['additional_info'] = additionalInfo;
     }
