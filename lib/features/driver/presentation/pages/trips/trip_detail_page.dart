@@ -344,7 +344,21 @@ class _TripDetailPageState extends State<TripDetailPage> {
                           child: Divider(),
                         ),
                         _InfoRow(
-                          label: 'Driver Commission (70%)',
+                          label: 'Company Revenue (70%)',
+                          value: NumberFormat.currency(
+                            symbol: 'KES ',
+                            decimalDigits: 0,
+                          ).format(trip.companyRevenue ?? 0),
+                          icon: Icons.business_rounded,
+                          iconColor: Colors.blue,
+                          valueStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                        _InfoRow(
+                          label: 'Driver Payout (30%)',
                           value:
                               NumberFormat.currency(
                                 symbol: 'KES ',
@@ -360,20 +374,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.green.shade700,
-                          ),
-                        ),
-                        _InfoRow(
-                          label: 'Company Revenue (30%)',
-                          value: NumberFormat.currency(
-                            symbol: 'KES ',
-                            decimalDigits: 0,
-                          ).format(trip.companyRevenue ?? 0),
-                          icon: Icons.business_rounded,
-                          iconColor: Colors.blue,
-                          valueStyle: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.blue.shade700,
                           ),
                         ),
                         const SizedBox(height: 12),

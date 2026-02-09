@@ -462,6 +462,21 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 const SizedBox(height: 32),
 
                 // Action Buttons
+                // TODO: Implement M-Pesa payment integration here for 'pending' or 'confirmed' status
+                // If payment is integrated, this would trigger the Flutterwave SDK.
+                if (order.isPendingConfirmation)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: FilledButton.icon(
+                      onPressed: () => _confirmDelivery(context, order.id),
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text('Confirm Delivery Received'),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 56),
+                        backgroundColor: Colors.teal,
+                      ),
+                    ),
+                  ),
                 if (order.isPending || order.isConfirmed || order.isAssigned)
                   FilledButton.icon(
                     onPressed: () => _cancelOrder(context, order.id),
@@ -472,7 +487,9 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                       backgroundColor: Colors.red,
                     ),
                   ),
-                if (order.isInTransit || order.isAssigned)
+                if (order.isInTransit ||
+                    order.isAssigned ||
+                    order.isPendingConfirmation)
                   OutlinedButton.icon(
                     onPressed: () => context.pop(),
                     icon: const Icon(Icons.arrow_back),
@@ -496,6 +513,49 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
         },
       ),
     );
+  }
+
+  Future<void> _confirmDelivery(BuildContext context, String orderId) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Confirm Delivery'),
+            content: const Text(
+              'Have you received your cargo in good condition?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(backgroundColor: Colors.teal),
+                child: const Text('Confirm Received'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+
+    if (!context.mounted) return;
+    final provider = context.read<CustomerOrderProvider>();
+    final success = await provider.confirmDelivery(orderId);
+
+    if (context.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Delivery confirmed! Thank you.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to confirm delivery.')),
+        );
+      }
+    }
   }
 
   Future<void> _cancelOrder(BuildContext context, String orderId) async {

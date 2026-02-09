@@ -69,6 +69,21 @@ class ShipmentDetailAdminPage extends StatelessWidget {
                     ),
                 ]),
                 const SizedBox(height: 16),
+                if (shipment.companyCommission != null ||
+                    shipment.driverPayout != null)
+                  _buildInfoCard('Financial Breakdown', [
+                    _InfoRow(
+                      label: 'Company Commission (70%)',
+                      value:
+                          'KES ${(shipment.companyCommission ?? 0).toStringAsFixed(2)}',
+                    ),
+                    _InfoRow(
+                      label: 'Driver Payout (30%)',
+                      value:
+                          'KES ${(shipment.driverPayout ?? 0).toStringAsFixed(2)}',
+                    ),
+                  ]),
+                const SizedBox(height: 16),
                 if (shipment.driverId != null)
                   _buildInfoCard('Driver & Vehicle', [
                     _InfoRow(

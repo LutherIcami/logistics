@@ -183,6 +183,7 @@ class Trip {
   // Helper methods
   bool get isAssigned => status == 'assigned';
   bool get isInTransit => status == 'in_transit';
+  bool get isPendingConfirmation => status == 'pending_confirmation';
   bool get isDelivered => status == 'delivered';
   bool get isCancelled => status == 'cancelled';
 
@@ -192,6 +193,8 @@ class Trip {
         return 'Assigned';
       case 'in_transit':
         return 'In Transit';
+      case 'pending_confirmation':
+        return 'Pending Confirmation';
       case 'delivered':
         return 'Delivered';
       case 'cancelled':
@@ -207,6 +210,8 @@ class Trip {
         return Colors.blue;
       case 'in_transit':
         return Colors.orange;
+      case 'pending_confirmation':
+        return Colors.teal;
       case 'delivered':
         return Colors.green;
       case 'cancelled':

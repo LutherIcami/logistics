@@ -5,16 +5,24 @@ import '../../../admin/domain/models/fleet_models.dart';
 import '../../../admin/data/repositories/vehicle_repository.dart';
 import '../../../../app/di/injection_container.dart' as di;
 
+import '../../../admin/data/repositories/finance_repository.dart';
+import '../../../admin/domain/models/finance_models.dart';
+
 class VehicleProvider extends ChangeNotifier {
-  VehicleProvider() : _repository = di.sl<VehicleRepository>();
+  VehicleProvider()
+    : _repository = di.sl<VehicleRepository>(),
+      _financeRepository = di.sl<FinanceRepository>();
 
   final VehicleRepository _repository;
+  final FinanceRepository _financeRepository;
 
   List<Vehicle> _vehicles = [];
+  List<DiagnosticReport> _diagnosticReports = [];
   bool _isLoading = false;
   String? _error;
 
   List<Vehicle> get vehicles => _vehicles;
+  List<DiagnosticReport> get diagnosticReports => _diagnosticReports;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -175,9 +183,11 @@ class VehicleProvider extends ChangeNotifier {
       final results = await Future.wait([
         _repository.getFuelLogs(vehicleId: vehicleId),
         _repository.getMaintenanceLogs(vehicleId: vehicleId),
+        _repository.getDiagnosticReports(vehicleId: vehicleId),
       ]);
       _fuelLogs = results[0] as List<FuelLog>;
       _maintenanceLogs = results[1] as List<MaintenanceLog>;
+      _diagnosticReports = results[2] as List<DiagnosticReport>;
       notifyListeners();
     } catch (e) {
       _error = 'Failed to load logs';
@@ -210,6 +220,24 @@ class VehicleProvider extends ChangeNotifier {
       final newLog = await _repository.addMaintenanceLog(log);
       _maintenanceLogs.insert(0, newLog);
 
+      // Automatically sync with Finance System
+      try {
+        await _financeRepository.addTransaction(
+          FinancialTransaction(
+            id: 'TX-MAIN-${log.id}',
+            type: TransactionType.expense,
+            amount: log.totalCost,
+            date: log.date,
+            description:
+                'Vehicle Maintenance: ${log.vehicleRegistration} - ${log.description}',
+            category: ExpenseCategory.maintenance,
+            referenceId: log.id,
+          ),
+        );
+      } catch (fe) {
+        debugPrint('Failed to sync maintenance cost to finance: $fe');
+      }
+
       // Update vehicle maintenance info
       final vehicle = await getVehicleById(log.vehicleId);
       if (vehicle != null) {
@@ -228,6 +256,43 @@ class VehicleProvider extends ChangeNotifier {
       return true;
     } catch (e) {
       _error = 'Failed to record maintenance log';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> reportDiagnosticIssue(DiagnosticReport report) async {
+    try {
+      final newReport = await _repository.addDiagnosticReport(report);
+      _diagnosticReports.insert(0, newReport);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = 'Failed to report issue';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateDiagnosticStatus(
+    String reportId,
+    DiagnosticStatus status, {
+    String? resolutionLogId,
+  }) async {
+    try {
+      final updatedReport = await _repository.updateDiagnosticStatus(
+        reportId,
+        status,
+        resolutionLogId: resolutionLogId,
+      );
+      final index = _diagnosticReports.indexWhere((r) => r.id == reportId);
+      if (index != -1) {
+        _diagnosticReports[index] = updatedReport;
+        notifyListeners();
+      }
+      return true;
+    } catch (e) {
+      _error = 'Failed to update diagnostic status';
       notifyListeners();
       return false;
     }

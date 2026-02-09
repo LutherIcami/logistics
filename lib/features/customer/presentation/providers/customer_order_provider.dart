@@ -167,7 +167,17 @@ class CustomerOrderProvider extends ChangeNotifier {
       debugPrint('DEBUG: Customer ID: ${order.customerId}');
       debugPrint('DEBUG: Order data: ${order.toJson()}');
 
-      final newOrder = await _orderRepository.createOrder(order);
+      // Calculate commission (70% Company, 30% Driver) - Configurable in future
+      final double totalCost = order.totalCost;
+      final double companyCommission = totalCost * 0.70;
+      final double driverPayout = totalCost * 0.30;
+
+      final orderWithCommission = order.copyWith(
+        companyCommission: companyCommission,
+        driverPayout: driverPayout,
+      );
+
+      final newOrder = await _orderRepository.createOrder(orderWithCommission);
       _orders.insert(0, newOrder);
       _error = null;
       notifyListeners();
@@ -181,6 +191,26 @@ class CustomerOrderProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<bool> confirmDelivery(String orderId) async {
+    try {
+      await _orderRepository.confirmDelivery(orderId);
+      await loadOrders(); // Reload to get updated status
+      return true;
+    } catch (e) {
+      _error = 'Failed to confirm delivery: ${e.toString()}';
+      notifyListeners();
+      return false;
+    }
+  }
+
+  /// TODO: Implement Flutterwave SDK for M-Pesa payments
+  /// This method will be triggered when the user clicks 'Pay' in the UI.
+  Future<bool> processPayment(String orderId, double amount) async {
+    // Placeholder for future Flutterwave integration
+    debugPrint('Payment processing for order $orderId is not yet implemented.');
+    return true;
   }
 
   Future<bool> cancelOrder(String orderId, {String? reason}) async {

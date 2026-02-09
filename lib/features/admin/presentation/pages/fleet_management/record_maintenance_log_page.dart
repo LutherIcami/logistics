@@ -34,13 +34,32 @@ class _RecordMaintenanceLogPageState extends State<RecordMaintenanceLogPage> {
   final _notesController = TextEditingController();
 
   bool _isSubmitting = false;
+  String? _reportId;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VehicleProvider>().loadInitialVehicles();
-      context.read<DriverProvider>().loadInitialDrivers();
+    _reportId = GoRouterState.of(context).uri.queryParameters['reportId'];
+    final vehicleId = GoRouterState.of(
+      context,
+    ).uri.queryParameters['vehicleId'];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await context.read<VehicleProvider>().loadInitialVehicles();
+      if (!mounted) return;
+      await context.read<DriverProvider>().loadInitialDrivers();
+      if (!mounted) return;
+
+      if (vehicleId != null) {
+        final vehicles = context.read<VehicleProvider>().vehicles;
+        setState(() {
+          _selectedVehicle = vehicles.firstWhere((v) => v.id == vehicleId);
+          if (_selectedVehicle != null) {
+            _odometerController.text = _selectedVehicle!.mileage
+                .toStringAsFixed(0);
+          }
+        });
+      }
     });
   }
 
@@ -109,6 +128,15 @@ class _RecordMaintenanceLogPageState extends State<RecordMaintenanceLogPage> {
     final success = await context.read<VehicleProvider>().recordMaintenanceLog(
       log,
     );
+
+    // If this service was to resolve a reported issue
+    if (success && _reportId != null && mounted) {
+      await context.read<VehicleProvider>().updateDiagnosticStatus(
+        _reportId!,
+        DiagnosticStatus.resolved,
+        resolutionLogId: log.id,
+      );
+    }
 
     if (mounted) {
       setState(() => _isSubmitting = false);

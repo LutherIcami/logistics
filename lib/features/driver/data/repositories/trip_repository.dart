@@ -122,7 +122,8 @@ class MockTripRepository implements TripRepository {
             ? now
             : _trips[index].pickupDate,
         deliveryDate:
-            status == 'delivered' && _trips[index].deliveryDate == null
+            (status == 'delivered' || status == 'pending_confirmation') &&
+                _trips[index].deliveryDate == null
             ? now
             : _trips[index].deliveryDate,
       );

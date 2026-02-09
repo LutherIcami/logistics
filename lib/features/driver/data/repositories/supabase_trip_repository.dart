@@ -43,7 +43,7 @@ class SupabaseTripRepository implements TripRepository {
 
       if (status == 'in_transit') {
         updateData['pickup_date'] = now;
-      } else if (status == 'delivered') {
+      } else if (status == 'delivered' || status == 'pending_confirmation') {
         updateData['delivery_date'] = now;
       }
 

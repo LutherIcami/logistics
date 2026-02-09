@@ -143,3 +143,108 @@ class MaintenanceLog {
     notes: json['notes'],
   );
 }
+
+enum DiagnosticSeverity { low, medium, high, critical }
+
+enum DiagnosticStatus { reported, inReview, scheduled, resolved, dismissed }
+
+class DiagnosticReport {
+  final String id;
+  final String vehicleId;
+  final String vehicleRegistration;
+  final String reporterId;
+  final String reporterName;
+  final DateTime date;
+  final double odometer;
+  final String issueDescription;
+  final DiagnosticSeverity severity;
+  final DiagnosticStatus status;
+  final List<String> images;
+  final String? resolutionLogId;
+  final String? notes;
+
+  DiagnosticReport({
+    required this.id,
+    required this.vehicleId,
+    required this.vehicleRegistration,
+    required this.reporterId,
+    required this.reporterName,
+    required this.date,
+    required this.odometer,
+    required this.issueDescription,
+    this.severity = DiagnosticSeverity.low,
+    this.status = DiagnosticStatus.reported,
+    this.images = const [],
+    this.resolutionLogId,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'vehicle_id': vehicleId,
+    'vehicle_registration': vehicleRegistration,
+    'reporter_id': reporterId,
+    'reporter_name': reporterName,
+    'date': date.toIso8601String(),
+    'odometer': odometer,
+    'issue_description': issueDescription,
+    'severity': severity.name,
+    'status': status.name,
+    'images': images,
+    'resolution_log_id': resolutionLogId,
+    'notes': notes,
+  };
+
+  factory DiagnosticReport.fromJson(Map<String, dynamic> json) =>
+      DiagnosticReport(
+        id: json['id'],
+        vehicleId: json['vehicle_id'],
+        vehicleRegistration: json['vehicle_registration'],
+        reporterId: json['reporter_id'],
+        reporterName: json['reporter_name'],
+        date: DateTime.parse(json['date']),
+        odometer: json['odometer'].toDouble(),
+        issueDescription: json['issue_description'],
+        severity: DiagnosticSeverity.values.firstWhere(
+          (e) => e.name == json['severity'],
+        ),
+        status: DiagnosticStatus.values.firstWhere(
+          (e) => e.name == json['status'],
+        ),
+        images: json['images'] != null ? List<String>.from(json['images']) : [],
+        resolutionLogId: json['resolution_log_id'],
+        notes: json['notes'],
+      );
+
+  DiagnosticReport copyWith({
+    String? id,
+    String? vehicleId,
+    String? vehicleRegistration,
+    String? reporterId,
+    String? reporterName,
+    DateTime? date,
+    double? odometer,
+    String? issueDescription,
+    DiagnosticSeverity? severity,
+    DiagnosticStatus? status,
+    List<String>? images,
+    String? resolutionLogId,
+    String? notes,
+  }) {
+    return DiagnosticReport(
+      id: id ?? this.id,
+      vehicleId: vehicleId ?? this.vehicleId,
+      vehicleRegistration: vehicleRegistration ?? this.vehicleRegistration,
+      reporterId: reporterId ?? this.reporterId,
+      reporterName: reporterName ?? this.reporterName,
+      date: date ?? this.date,
+      odometer: odometer ?? this.odometer,
+      issueDescription: issueDescription ?? this.issueDescription,
+      severity: severity ?? this.severity,
+      status: status ?? this.status,
+      images: images ?? this.images,
+      resolutionLogId: resolutionLogId ?? this.resolutionLogId,
+      notes: notes ?? this.notes,
+    );
+  }
+}

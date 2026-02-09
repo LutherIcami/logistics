@@ -14,6 +14,8 @@ class ReportsProvider extends ChangeNotifier {
   // Financials
   List<WeeklyRevenue> _weeklyRevenue = [];
   List<MonthlyRevenue> _monthlyRevenue = [];
+  Map<String, double> _expenseBreakdown = {};
+  List<CustomerRevenue> _topCustomers = [];
 
   // Shipments
   List<ShipmentStat> _shipmentStats = [];
@@ -27,6 +29,8 @@ class ReportsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   List<WeeklyRevenue> get weeklyRevenue => _weeklyRevenue;
   List<MonthlyRevenue> get monthlyRevenue => _monthlyRevenue;
+  Map<String, double> get expenseBreakdown => _expenseBreakdown;
+  List<CustomerRevenue> get topCustomers => _topCustomers;
 
   List<ShipmentStat> get shipmentStats => _shipmentStats;
   List<RegionStat> get shipmentByRegion => _shipmentByRegion;
@@ -48,6 +52,8 @@ class ReportsProvider extends ChangeNotifier {
         _repository.getDriverPerformance(),
         _repository.getAverageDeliveryTime(),
         _repository.getOnTimeRate(),
+        _repository.getExpenseBreakdown(),
+        _repository.getTopCustomers(),
       ]);
 
       _weeklyRevenue = results[0] as List<WeeklyRevenue>;
@@ -57,6 +63,8 @@ class ReportsProvider extends ChangeNotifier {
       _driverPerformance = results[4] as List<DriverPerformanceStat>;
       _avgDeliveryTimeHours = results[5] as double;
       _overallOnTimeRate = results[6] as double;
+      _expenseBreakdown = results[7] as Map<String, double>;
+      _topCustomers = results[8] as List<CustomerRevenue>;
     } catch (e) {
       debugPrint('Error loading reports: $e');
     } finally {

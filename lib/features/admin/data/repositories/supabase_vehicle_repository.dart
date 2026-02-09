@@ -196,4 +196,60 @@ class SupabaseVehicleRepository implements VehicleRepository {
       throw Exception('Failed to add maintenance log: $e');
     }
   }
+
+  @override
+  Future<List<DiagnosticReport>> getDiagnosticReports({
+    String? vehicleId,
+  }) async {
+    try {
+      var query = client.from('diagnostic_reports').select();
+      if (vehicleId != null) {
+        query = query.eq('vehicle_id', vehicleId);
+      }
+      final response = await query.order('date', ascending: false);
+      return (response as List)
+          .map((json) => DiagnosticReport.fromJson(json))
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch diagnostic reports: $e');
+    }
+  }
+
+  @override
+  Future<DiagnosticReport> addDiagnosticReport(DiagnosticReport report) async {
+    try {
+      final response = await client
+          .from('diagnostic_reports')
+          .insert(report.toJson())
+          .select()
+          .single();
+      return DiagnosticReport.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to add diagnostic report: $e');
+    }
+  }
+
+  @override
+  Future<DiagnosticReport> updateDiagnosticStatus(
+    String reportId,
+    DiagnosticStatus status, {
+    String? resolutionLogId,
+  }) async {
+    try {
+      final Map<String, dynamic> updateData = {'status': status.name};
+      if (resolutionLogId != null) {
+        updateData['resolution_log_id'] = resolutionLogId;
+      }
+
+      final response = await client
+          .from('diagnostic_reports')
+          .update(updateData)
+          .eq('id', reportId)
+          .select()
+          .single();
+      return DiagnosticReport.fromJson(response);
+    } catch (e) {
+      throw Exception('Failed to update diagnostic status: $e');
+    }
+  }
 }

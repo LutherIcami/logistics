@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/models/fleet_models.dart';
 import '../../providers/vehicle_provider.dart';
 import '../base_module_page.dart';
 import '../../../../../core/widgets/responsive.dart';
@@ -119,7 +120,10 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                 if (provider.vehiclesNeedingMaintenance.isNotEmpty ||
                     provider.vehiclesWithExpiredInsurance.isNotEmpty ||
                     provider.vehiclesWithExpiredLicense.isNotEmpty ||
-                    provider.lowFuelVehicles.isNotEmpty) ...[
+                    provider.lowFuelVehicles.isNotEmpty ||
+                    provider.diagnosticReports.any(
+                      (r) => r.status == DiagnosticStatus.reported,
+                    )) ...[
                   const Text(
                     'Critical Alerts',
                     style: TextStyle(
@@ -129,6 +133,18 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  if (provider.diagnosticReports.any(
+                    (r) => r.status == DiagnosticStatus.reported,
+                  ))
+                    _StandardAlertCard(
+                      title: 'Unresolved Vehicle Issues',
+                      subtitle:
+                          '${provider.diagnosticReports.where((r) => r.status == DiagnosticStatus.reported).length} issues pending review',
+                      icon: Icons.error_outline_rounded,
+                      color: Colors.redAccent,
+                      onTap: () => context.push('/admin/fleet/diagnostics'),
+                    ),
+                  const SizedBox(height: 12),
                   if (provider.vehiclesNeedingMaintenance.isNotEmpty)
                     _StandardAlertCard(
                       title: 'Urgent Maintenance Required',
@@ -208,10 +224,10 @@ class _FleetDashboardPageState extends State<FleetDashboardPage> {
                       onTap: () => context.push('/admin/fleet/fuel'),
                     ),
                     _MenuActionCard(
-                      title: 'Analytics',
-                      icon: Icons.analytics_rounded,
-                      color: Colors.purple,
-                      onTap: () {},
+                      title: 'Diagnostics',
+                      icon: Icons.biotech_rounded,
+                      color: Colors.redAccent,
+                      onTap: () => context.push('/admin/fleet/diagnostics'),
                     ),
                   ],
                 ),

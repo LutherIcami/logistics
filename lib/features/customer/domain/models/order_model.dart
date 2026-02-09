@@ -6,8 +6,7 @@ class Order {
   final String customerName;
   final String pickupLocation;
   final String deliveryLocation;
-  final String
-  status; // 'pending', 'confirmed', 'assigned', 'in_transit', 'delivered', 'cancelled'
+  final String status;
   final DateTime orderDate;
   final DateTime? pickupDate;
   final DateTime? deliveryDate;
@@ -22,6 +21,8 @@ class Order {
   final double totalCost;
   final String? trackingNumber;
   final String? cancellationReason;
+  final double? companyCommission;
+  final double? driverPayout;
   final Map<String, dynamic>? additionalInfo;
 
   Order({
@@ -45,6 +46,8 @@ class Order {
     required this.totalCost,
     this.trackingNumber,
     this.cancellationReason,
+    this.companyCommission,
+    this.driverPayout,
     this.additionalInfo,
   });
 
@@ -70,6 +73,8 @@ class Order {
       'total_cost': totalCost,
       'tracking_number': trackingNumber,
       'cancellation_reason': cancellationReason,
+      'company_commission': companyCommission,
+      'driver_payout': driverPayout,
     };
 
     if (additionalInfo != null) {
@@ -115,6 +120,9 @@ class Order {
       trackingNumber: json['tracking_number'] ?? json['trackingNumber'],
       cancellationReason:
           json['cancellation_reason'] ?? json['cancellationReason'],
+      companyCommission:
+          (json['company_commission'] ?? json['companyCommission'])?.toDouble(),
+      driverPayout: (json['driver_payout'] ?? json['driverPayout'])?.toDouble(),
       additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
@@ -140,6 +148,8 @@ class Order {
     double? totalCost,
     String? trackingNumber,
     String? cancellationReason,
+    double? companyCommission,
+    double? driverPayout,
     Map<String, dynamic>? additionalInfo,
   }) {
     return Order(
@@ -163,6 +173,8 @@ class Order {
       totalCost: totalCost ?? this.totalCost,
       trackingNumber: trackingNumber ?? this.trackingNumber,
       cancellationReason: cancellationReason ?? this.cancellationReason,
+      companyCommission: companyCommission ?? this.companyCommission,
+      driverPayout: driverPayout ?? this.driverPayout,
       additionalInfo: additionalInfo ?? this.additionalInfo,
     );
   }
@@ -172,6 +184,7 @@ class Order {
   bool get isConfirmed => status == 'confirmed';
   bool get isAssigned => status == 'assigned';
   bool get isInTransit => status == 'in_transit';
+  bool get isPendingConfirmation => status == 'pending_confirmation';
   bool get isDelivered => status == 'delivered';
   bool get isCancelled => status == 'cancelled';
 
@@ -185,6 +198,8 @@ class Order {
         return 'Assigned';
       case 'in_transit':
         return 'In Transit';
+      case 'pending_confirmation':
+        return 'Pending Confirmation';
       case 'delivered':
         return 'Delivered';
       case 'cancelled':
@@ -204,6 +219,8 @@ class Order {
         return Colors.purple;
       case 'in_transit':
         return Colors.amber;
+      case 'pending_confirmation':
+        return Colors.teal;
       case 'delivered':
         return Colors.green;
       case 'cancelled':
@@ -223,6 +240,8 @@ class Order {
         return '🚚';
       case 'in_transit':
         return '🚛';
+      case 'pending_confirmation':
+        return '📝';
       case 'delivered':
         return '✅';
       case 'cancelled':

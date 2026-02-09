@@ -16,6 +16,8 @@ import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_d
 import '../features/admin/presentation/pages/fleet_management/vehicles/vehicle_form_page.dart';
 import '../features/admin/presentation/pages/fleet_management/record_fuel_log_page.dart';
 import '../features/admin/presentation/pages/fleet_management/record_maintenance_log_page.dart';
+import '../features/admin/presentation/pages/fleet_management/vehicle_diagnostics_page.dart';
+import '../features/admin/presentation/pages/fleet_management/report_issue_page.dart';
 import '../features/admin/presentation/pages/shipments/shipments_page.dart';
 import '../features/admin/presentation/pages/shipments/shipment_detail_page.dart';
 import '../features/admin/presentation/pages/shipments/shipment_form_page.dart';
@@ -132,6 +134,16 @@ final GoRouter appRouter = GoRouter(
               path: 'vehicles/:id/edit',
               builder: (context, state) =>
                   VehicleFormPage(vehicleId: state.pathParameters['id']!),
+            ),
+            GoRoute(
+              path: 'diagnostics',
+              builder: (context, state) => const VehicleDiagnosticsPage(),
+              routes: [
+                GoRoute(
+                  path: 'report',
+                  builder: (context, state) => const ReportIssuePage(),
+                ),
+              ],
             ),
           ],
         ),

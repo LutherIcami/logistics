@@ -78,6 +78,21 @@ class SupabaseOrderRepository implements OrderRepository {
   }
 
   @override
+  Future<void> confirmDelivery(String orderId) async {
+    try {
+      await client
+          .from('orders')
+          .update({
+            'status': 'delivered',
+            'delivery_date': DateTime.now().toIso8601String(),
+          })
+          .eq('id', orderId);
+    } catch (e) {
+      throw Exception('Failed to confirm delivery: $e');
+    }
+  }
+
+  @override
   Future<void> cancelOrder(String orderId, {String? reason}) async {
     try {
       final updates = {'status': 'cancelled'};

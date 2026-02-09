@@ -11,17 +11,21 @@ import '../../../../features/common/domain/repositories/notification_repository.
 import '../../../../features/common/domain/models/notification_model.dart';
 import 'dart:async';
 
+import '../../../customer/data/repositories/order_repository.dart';
+
 class DriverTripProvider extends ChangeNotifier {
   DriverTripProvider()
     : _tripRepository = di.sl<TripRepository>(),
       _driverRepository = di.sl<DriverRepository>(),
       _vehicleRepository = di.sl<VehicleRepository>(),
-      _notificationRepository = di.sl<NotificationRepository>();
+      _notificationRepository = di.sl<NotificationRepository>(),
+      _orderRepository = di.sl<OrderRepository>();
 
   final TripRepository _tripRepository;
   final DriverRepository _driverRepository;
   final VehicleRepository _vehicleRepository;
   final NotificationRepository _notificationRepository;
+  final OrderRepository _orderRepository;
 
   // Current logged-in driver (in real app, this would come from auth)
   String? _currentDriverId;
@@ -51,10 +55,15 @@ class DriverTripProvider extends ChangeNotifier {
       _trips.where((trip) => trip.isInTransit).toList();
   List<Trip> get completedTrips =>
       _trips.where((trip) => trip.isDelivered).toList();
+  List<Trip> get pendingConfirmationTrips =>
+      _trips.where((trip) => trip.isPendingConfirmation).toList();
 
   // Stats
   int get totalTrips => _trips.length;
-  int get activeTrips => assignedTrips.length + inTransitTrips.length;
+  int get activeTrips =>
+      assignedTrips.length +
+      inTransitTrips.length +
+      pendingConfirmationTrips.length;
 
   // Notification State
 
@@ -265,10 +274,31 @@ class DriverTripProvider extends ChangeNotifier {
 
   Future<bool> updateTripStatus(String tripId, String status) async {
     try {
+      String finalStatus = status;
+
+      // If driver marks as delivered, it actually goes to pending_confirmation
+      // so the customer can confirm it on their side.
+      if (status == 'delivered') {
+        finalStatus = 'pending_confirmation';
+      }
+
       final updatedTrip = await _tripRepository.updateTripStatus(
         tripId,
-        status,
+        finalStatus,
       );
+
+      // Also update the order status to stay in sync
+      try {
+        final order = await _orderRepository.getOrderById(tripId);
+        if (order != null) {
+          await _orderRepository.updateOrder(
+            order.copyWith(status: finalStatus),
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to sync order status: $e');
+      }
+
       final index = _trips.indexWhere((t) => t.id == tripId);
       if (index != -1) {
         _trips[index] = updatedTrip;

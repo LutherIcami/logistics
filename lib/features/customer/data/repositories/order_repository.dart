@@ -9,6 +9,7 @@ abstract class OrderRepository {
   Future<Order?> getOrderById(String id);
   Future<Order> createOrder(Order order);
   Future<Order> updateOrder(Order order);
+  Future<void> confirmDelivery(String orderId);
   Future<void> cancelOrder(String orderId, {String? reason});
   Stream<List<Order>> streamOrders();
 }
@@ -144,6 +145,18 @@ class MockOrderRepository implements OrderRepository {
       _orders.add(order);
     }
     return order;
+  }
+
+  @override
+  Future<void> confirmDelivery(String orderId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    final index = _orders.indexWhere((o) => o.id == orderId);
+    if (index != -1) {
+      _orders[index] = _orders[index].copyWith(
+        status: 'delivered',
+        deliveryDate: DateTime.now(),
+      );
+    }
   }
 
   @override

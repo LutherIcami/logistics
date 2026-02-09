@@ -19,6 +19,15 @@ abstract class VehicleRepository {
   Future<FuelLog> addFuelLog(FuelLog log);
   Future<List<MaintenanceLog>> getMaintenanceLogs({String? vehicleId});
   Future<MaintenanceLog> addMaintenanceLog(MaintenanceLog log);
+
+  // Diagnostic Reports
+  Future<List<DiagnosticReport>> getDiagnosticReports({String? vehicleId});
+  Future<DiagnosticReport> addDiagnosticReport(DiagnosticReport report);
+  Future<DiagnosticReport> updateDiagnosticStatus(
+    String reportId,
+    DiagnosticStatus status, {
+    String? resolutionLogId,
+  });
 }
 
 /// Simple in-memory mock implementation for local/testing use.
@@ -215,4 +224,22 @@ class MockVehicleRepository implements VehicleRepository {
 
   @override
   Future<MaintenanceLog> addMaintenanceLog(MaintenanceLog log) async => log;
+
+  @override
+  Future<List<DiagnosticReport>> getDiagnosticReports({
+    String? vehicleId,
+  }) async => [];
+
+  @override
+  Future<DiagnosticReport> addDiagnosticReport(DiagnosticReport report) async =>
+      report;
+
+  @override
+  Future<DiagnosticReport> updateDiagnosticStatus(
+    String reportId,
+    DiagnosticStatus status, {
+    String? resolutionLogId,
+  }) async {
+    throw UnimplementedError();
+  }
 }
