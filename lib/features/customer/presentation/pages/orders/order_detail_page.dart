@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../providers/customer_order_provider.dart';
 
 class OrderDetailPage extends StatefulWidget {
@@ -25,25 +24,97 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Order Details'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-      body: Consumer<CustomerOrderProvider>(
-        builder: (context, provider, _) {
-          if (provider.orders.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final order = provider.orders.firstWhere(
-            (o) => o.id == widget.orderId,
-            orElse: () => throw Exception('Order not found'),
+    return Consumer<CustomerOrderProvider>(
+      builder: (context, provider, _) {
+        if (provider.orders.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Order Details')),
+            body: const Center(child: CircularProgressIndicator()),
           );
+        }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
+        final order = provider.orders.firstWhere(
+          (o) => o.id == widget.orderId,
+          orElse: () => throw Exception('Order not found'),
+        );
+
+        final showPayment = !order.isPaid && !order.isCancelled;
+        final showConfirmation = order.isPendingConfirmation;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Order Details'),
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+          ),
+          bottomNavigationBar: (showPayment || showConfirmation)
+              ? Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, -2),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (showPayment)
+                          FilledButton.icon(
+                            onPressed: provider.isLoading
+                                ? null
+                                : () => _processMpesaPayment(
+                                    context,
+                                    order.id,
+                                    order.totalCost,
+                                  ),
+                            icon: provider.isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.account_balance_wallet),
+                            label: const Text('Pay with M-Pesa'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 56),
+                              backgroundColor: Colors.green.shade700,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        if (showPayment && showConfirmation)
+                          const SizedBox(height: 12),
+                        if (showConfirmation)
+                          FilledButton.icon(
+                            onPressed: () =>
+                                _confirmDelivery(context, order.id),
+                            icon: const Icon(Icons.check_circle),
+                            label: const Text('Confirm Delivery Received'),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(double.infinity, 56),
+                              backgroundColor: Colors.teal,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              : null,
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -97,26 +168,6 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                                 ),
                               ],
                             ),
-                            if (order.trackingNumber != null) ...[
-                              const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.qr_code,
-                                    size: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Tracking: ${order.trackingNumber!}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
                           ],
                         ),
                         Container(
@@ -139,7 +190,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
                 // Order Information
                 Text(
-                  'Order Information',
+                  'Order Details',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -167,6 +218,14 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                             ).format(order.estimatedDelivery!),
                           ),
                         ],
+                        const Divider(),
+                        _InfoRow(label: 'Cargo Type', value: order.cargoType),
+                        if (order.cargoWeight != null)
+                          _InfoRow(
+                            label: 'Weight',
+                            value:
+                                '${order.cargoWeight!.toStringAsFixed(0)} kg',
+                          ),
                       ],
                     ),
                   ),
@@ -175,7 +234,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
 
                 // Route Information
                 Text(
-                  'Route Information',
+                  'Route',
                   style: Theme.of(
                     context,
                   ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
@@ -186,199 +245,21 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.location_on,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Pickup Location',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    order.pickupLocation,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => _openMap(order.pickupLocation),
-                              icon: const Icon(
-                                Icons.map_outlined,
-                                color: Colors.blue,
-                                size: 20,
-                              ),
-                              tooltip: 'View on map',
-                            ),
-                          ],
+                        _RouteLine(
+                          label: 'Pickup',
+                          value: order.pickupLocation,
+                          isPickup: true,
                         ),
                         const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.location_on,
-                                color: Colors.green,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Delivery Location',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  Text(
-                                    order.deliveryLocation,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () => _openMap(order.deliveryLocation),
-                              icon: const Icon(
-                                Icons.map_outlined,
-                                color: Colors.green,
-                                size: 20,
-                              ),
-                              tooltip: 'View on map',
-                            ),
-                          ],
+                        _RouteLine(
+                          label: 'Delivery',
+                          value: order.deliveryLocation,
+                          isPickup: false,
                         ),
-                        if (order.distance != null) ...[
-                          const SizedBox(height: 16),
-                          const Divider(),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                'Distance',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                              Text(
-                                '${order.distance!.toStringAsFixed(1)} km',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-
-                // Cargo & Driver Information
-                Text(
-                  'Cargo & Driver Information',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _InfoRow(label: 'Cargo Type', value: order.cargoType),
-                        if (order.cargoWeight != null)
-                          _InfoRow(
-                            label: 'Weight',
-                            value:
-                                '${order.cargoWeight!.toStringAsFixed(0)} kg',
-                          ),
-                        if (order.driverName != null) ...[
-                          const Divider(),
-                          _InfoRow(
-                            label: 'Driver',
-                            value: order.driverName!,
-                            icon: Icons.person,
-                          ),
-                        ],
-                        if (order.vehiclePlate != null)
-                          _InfoRow(
-                            label: 'Vehicle',
-                            value: order.vehiclePlate!,
-                            icon: Icons.local_shipping,
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                if (order.specialInstructions != null) ...[
-                  const SizedBox(height: 16),
-                  Card(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.info_outline,
-                                color: Colors.orange,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Special Instructions',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.orange[900],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(order.specialInstructions!),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 24),
 
                 // Timeline
@@ -409,110 +290,203 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                           date: order.deliveryDate,
                           isCompleted: order.deliveryDate != null,
                         ),
-                        if (order.estimatedDelivery != null)
-                          _TimelineItem(
-                            label: 'Estimated Delivery',
-                            date: order.estimatedDelivery,
-                            isCompleted: false,
-                            isEstimate: true,
-                          ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // Cost
+                // Financial Summary
                 Card(
                   color: Colors.green.withValues(alpha: 0.1),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            const Text(
                               'Total Cost',
                               style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600],
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
                               'KES ${order.totalCost.toStringAsFixed(0)}',
                               style: const TextStyle(
-                                fontSize: 28,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.green,
                               ),
                             ),
                           ],
                         ),
-                        const Icon(
-                          Icons.attach_money,
-                          size: 32,
-                          color: Colors.green,
+                        const Divider(),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Payment Status'),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: order.isPaid
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.orange.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                order.paymentStatus.toUpperCase(),
+                                style: TextStyle(
+                                  color: order.isPaid
+                                      ? Colors.green
+                                      : Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 32),
 
-                // Action Buttons
-                // TODO: Implement M-Pesa payment integration here for 'pending' or 'confirmed' status
-                // If payment is integrated, this would trigger the Flutterwave SDK.
-                if (order.isPendingConfirmation)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: FilledButton.icon(
-                      onPressed: () => _confirmDelivery(context, order.id),
-                      icon: const Icon(Icons.check_circle),
-                      label: const Text('Confirm Delivery Received'),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 56),
-                        backgroundColor: Colors.teal,
-                      ),
-                    ),
-                  ),
+                // Secondary Actions
                 if (order.isPending || order.isConfirmed || order.isAssigned)
-                  FilledButton.icon(
+                  TextButton.icon(
                     onPressed: () => _cancelOrder(context, order.id),
-                    icon: const Icon(Icons.cancel),
-                    label: const Text('Cancel Order'),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                      backgroundColor: Colors.red,
+                    icon: const Icon(Icons.cancel, color: Colors.red),
+                    label: const Text(
+                      'Cancel Order',
+                      style: TextStyle(color: Colors.red),
                     ),
-                  ),
-                if (order.isInTransit ||
-                    order.isAssigned ||
-                    order.isPendingConfirmation)
-                  OutlinedButton.icon(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back'),
-                    style: OutlinedButton.styleFrom(
+                    style: TextButton.styleFrom(
                       minimumSize: const Size(double.infinity, 48),
                     ),
                   ),
-                if (order.isDelivered || order.isCancelled)
-                  OutlinedButton.icon(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back),
-                    label: const Text('Back'),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 48),
-                    ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Back to My Orders'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
                   ),
+                ),
               ],
             ),
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _processMpesaPayment(
+    BuildContext context,
+    String orderId,
+    double amount,
+  ) async {
+    final provider = context.read<CustomerOrderProvider>();
+    final phoneController = TextEditingController(
+      text: provider.currentCustomer?.phone,
+    );
+
+    final String? phoneNumber = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('M-Pesa Payment'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter the phone number that will receive the M-Pesa prompt:',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: phoneController,
+              decoration: const InputDecoration(
+                labelText: 'Phone Number',
+                hintText: '2547XXXXXXXX',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.phone_android),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Amount: KES ${amount.toStringAsFixed(0)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final phone = phoneController.text.trim();
+              if (phone.isEmpty) return;
+              Navigator.pop(context, phone);
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Send Prompt'),
+          ),
+        ],
       ),
     );
+
+    if (phoneNumber == null || phoneNumber.isEmpty) return;
+
+    if (!context.mounted) return;
+    final success = await provider.processPayment(
+      orderId,
+      amount,
+      phoneNumber: phoneNumber,
+    );
+
+    if (context.mounted) {
+      if (success) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 10),
+                Text('STK Push Sent'),
+              ],
+            ),
+            content: const Text(
+              'Please check your phone for the M-Pesa pin prompt to complete the payment.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(provider.error ?? 'Failed to initiate payment'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _confirmDelivery(BuildContext context, String orderId) async {
@@ -619,39 +593,13 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
       }
     }
   }
-
-  Future<void> _openMap(String address) async {
-    final encodedAddress = Uri.encodeComponent(address);
-    final googleMapsUrl =
-        'https://www.google.com/maps/search/?api=1&query=$encodedAddress';
-    final appleMapsUrl = 'https://maps.apple.com/?q=$encodedAddress';
-
-    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
-      await launchUrl(
-        Uri.parse(googleMapsUrl),
-        mode: LaunchMode.externalApplication,
-      );
-    } else if (await canLaunchUrl(Uri.parse(appleMapsUrl))) {
-      await launchUrl(
-        Uri.parse(appleMapsUrl),
-        mode: LaunchMode.externalApplication,
-      );
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not open map application')),
-        );
-      }
-    }
-  }
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value, this.icon});
+  const _InfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
-  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -661,23 +609,55 @@ class _InfoRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
-          Row(
+          Text(
+            value,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteLine extends StatelessWidget {
+  const _RouteLine({
+    required this.label,
+    required this.value,
+    required this.isPickup,
+  });
+  final String label;
+  final String value;
+  final bool isPickup;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.location_on,
+          color: isPickup ? Colors.blue : Colors.green,
+          size: 20,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (icon != null) ...[
-                Icon(icon, size: 16, color: Colors.blue),
-                const SizedBox(width: 4),
-              ],
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
               Text(
                 value,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -687,13 +667,11 @@ class _TimelineItem extends StatelessWidget {
     required this.label,
     required this.date,
     required this.isCompleted,
-    this.isEstimate = false,
   });
 
   final String label;
   final DateTime? date;
   final bool isCompleted;
-  final bool isEstimate;
 
   @override
   Widget build(BuildContext context) {
@@ -706,16 +684,10 @@ class _TimelineItem extends StatelessWidget {
             height: 24,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: isCompleted
-                  ? Colors.green
-                  : isEstimate
-                  ? Colors.orange
-                  : Colors.grey[300],
+              color: isCompleted ? Colors.green : Colors.grey[300],
             ),
             child: isCompleted
                 ? const Icon(Icons.check, size: 16, color: Colors.white)
-                : isEstimate
-                ? const Icon(Icons.schedule, size: 16, color: Colors.white)
                 : null,
           ),
           const SizedBox(width: 16),
@@ -738,9 +710,9 @@ class _TimelineItem extends StatelessWidget {
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   )
                 else
-                  Text(
-                    'Not yet',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                  const Text(
+                    'Pending',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
               ],
             ),

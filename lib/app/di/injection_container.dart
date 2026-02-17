@@ -22,6 +22,7 @@ import '../../features/admin/data/repositories/settings_repository.dart';
 import '../../features/admin/data/repositories/supabase_settings_repository.dart';
 import '../../features/common/domain/repositories/notification_repository.dart';
 import '../../features/common/data/repositories/supabase_notification_repository.dart';
+import '../../features/customer/data/repositories/payment_repository.dart';
 
 final sl = GetIt.instance;
 
@@ -75,6 +76,11 @@ Future<void> init() async {
   // Common - Notifications
   sl.registerLazySingleton<NotificationRepository>(
     () => SupabaseNotificationRepository(sl()),
+  );
+
+  // Payments
+  sl.registerLazySingleton<PaymentRepository>(
+    () => SupabasePaymentRepository(sl(), sl()),
   );
 
   // Repositories

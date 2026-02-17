@@ -54,7 +54,7 @@ class DriverProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      // Profile Avatar with initials
+                      // Profile Avatar with Image Support
                       Container(
                         width: 100,
                         height: 100,
@@ -68,17 +68,29 @@ class DriverProfilePage extends StatelessWidget {
                               offset: const Offset(0, 4),
                             ),
                           ],
+                          image:
+                              driver.profileImage != null &&
+                                  driver.profileImage!.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(driver.profileImage!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        child: Center(
-                          child: Text(
-                            _getInitials(driver.name),
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.orange.shade700,
-                            ),
-                          ),
-                        ),
+                        child:
+                            driver.profileImage == null ||
+                                driver.profileImage!.isEmpty
+                            ? Center(
+                                child: Text(
+                                  _getInitials(driver.name),
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.orange.shade700,
+                                  ),
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(height: 16),
 

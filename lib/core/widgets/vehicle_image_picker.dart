@@ -9,6 +9,7 @@ class VehicleImagePicker extends StatefulWidget {
   final String vehiclePlate;
   final int maxImages;
   final ValueChanged<List<File>> onImagesSelected;
+  final ValueChanged<List<String>>? onExistingImagesChanged;
 
   const VehicleImagePicker({
     super.key,
@@ -16,6 +17,7 @@ class VehicleImagePicker extends StatefulWidget {
     required this.vehiclePlate,
     this.maxImages = 4,
     required this.onImagesSelected,
+    this.onExistingImagesChanged,
   });
 
   @override
@@ -24,7 +26,14 @@ class VehicleImagePicker extends StatefulWidget {
 
 class _VehicleImagePickerState extends State<VehicleImagePicker> {
   final List<File> _selectedImages = [];
+  late List<String> _remainingUrls;
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _remainingUrls = List.from(widget.currentImageUrls ?? []);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +50,7 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             Text(
-              '${_selectedImages.length}/${widget.maxImages}',
+              '${_selectedImages.length + _remainingUrls.length}/${widget.maxImages}',
               style: TextStyle(color: Colors.grey[600], fontSize: 12),
             ),
           ],
@@ -58,7 +67,8 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
             scrollDirection: Axis.horizontal,
             children: [
               // Add Photo Button
-              if (_selectedImages.length < widget.maxImages)
+              if (_selectedImages.length + _remainingUrls.length <
+                  widget.maxImages)
                 _AddPhotoButton(onTap: _showImageSourceDialog),
 
               // Selected Images
@@ -70,10 +80,12 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
               }),
 
               // Existing Network Images
-              if (widget.currentImageUrls != null && _selectedImages.isEmpty)
-                ...widget.currentImageUrls!.map((url) {
-                  return _NetworkImageTile(url: url);
-                }),
+              ..._remainingUrls.asMap().entries.map((entry) {
+                return _NetworkImageTile(
+                  url: entry.value,
+                  onRemove: () => _removeExistingImage(entry.key),
+                );
+              }),
             ],
           ),
         ),
@@ -183,7 +195,7 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    if (_selectedImages.length >= widget.maxImages) {
+    if (_selectedImages.length + _remainingUrls.length >= widget.maxImages) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Maximum ${widget.maxImages} images allowed')),
@@ -216,8 +228,9 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
   }
 
   Future<void> _pickMultipleImages() async {
-    final remaining = widget.maxImages - _selectedImages.length;
-    if (remaining <= 0) {
+    final remainingCount =
+        widget.maxImages - (_selectedImages.length + _remainingUrls.length);
+    if (remainingCount <= 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Maximum ${widget.maxImages} images allowed')),
@@ -237,7 +250,9 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
         setState(() {
           for (
             var i = 0;
-            i < pickedFiles.length && _selectedImages.length < widget.maxImages;
+            i < pickedFiles.length &&
+                _selectedImages.length + _remainingUrls.length <
+                    widget.maxImages;
             i++
           ) {
             _selectedImages.add(File(pickedFiles[i].path));
@@ -261,11 +276,20 @@ class _VehicleImagePickerState extends State<VehicleImagePicker> {
     widget.onImagesSelected(_selectedImages);
   }
 
+  void _removeExistingImage(int index) {
+    setState(() {
+      _remainingUrls.removeAt(index);
+    });
+    widget.onExistingImagesChanged?.call(_remainingUrls);
+  }
+
   void _clearAllImages() {
     setState(() {
       _selectedImages.clear();
+      _remainingUrls.clear();
     });
     widget.onImagesSelected(_selectedImages);
+    widget.onExistingImagesChanged?.call(_remainingUrls);
   }
 }
 
@@ -357,8 +381,9 @@ class _ImageTile extends StatelessWidget {
 
 class _NetworkImageTile extends StatelessWidget {
   final String url;
+  final VoidCallback onRemove;
 
-  const _NetworkImageTile({required this.url});
+  const _NetworkImageTile({required this.url, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
@@ -366,18 +391,37 @@ class _NetworkImageTile extends StatelessWidget {
       width: 100,
       height: 100,
       margin: const EdgeInsets.only(right: 12),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          url,
-          width: 100,
-          height: 100,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => Container(
-            color: Colors.grey[200],
-            child: const Icon(Icons.broken_image, color: Colors.grey),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              url,
+              width: 100,
+              height: 100,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey[200],
+                child: const Icon(Icons.broken_image, color: Colors.grey),
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

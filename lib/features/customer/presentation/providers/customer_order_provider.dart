@@ -9,6 +9,7 @@ import '../../../driver/data/repositories/trip_repository.dart';
 import '../../../../app/di/injection_container.dart' as di;
 import '../../../../features/common/domain/repositories/notification_repository.dart';
 import '../../../../features/common/domain/models/notification_model.dart';
+import '../../data/repositories/payment_repository.dart';
 import 'package:uuid/uuid.dart';
 
 class CustomerOrderProvider extends ChangeNotifier {
@@ -16,12 +17,14 @@ class CustomerOrderProvider extends ChangeNotifier {
     : _orderRepository = di.sl<OrderRepository>(),
       _customerRepository = di.sl<CustomerRepository>(),
       _tripRepository = di.sl<TripRepository>(),
-      _notificationRepository = di.sl<NotificationRepository>();
+      _notificationRepository = di.sl<NotificationRepository>(),
+      _paymentRepository = di.sl<PaymentRepository>();
 
   final OrderRepository _orderRepository;
   final CustomerRepository _customerRepository;
   final TripRepository _tripRepository;
   final NotificationRepository _notificationRepository;
+  final PaymentRepository _paymentRepository;
   StreamSubscription<List<Order>>? _subscription;
 
   // Current logged-in customer (in real app, this would come from auth)
@@ -219,12 +222,37 @@ class CustomerOrderProvider extends ChangeNotifier {
     }
   }
 
-  /// TODO: Implement Flutterwave SDK for M-Pesa payments
-  /// This method will be triggered when the user clicks 'Pay' in the UI.
-  Future<bool> processPayment(String orderId, double amount) async {
-    // Placeholder for future Flutterwave integration
-    debugPrint('Payment processing for order $orderId is not yet implemented.');
-    return true;
+  /// Process M-Pesa payment using STK Push
+  Future<bool> processPayment(
+    String orderId,
+    double amount, {
+    String? phoneNumber,
+  }) async {
+    final targetPhone = phoneNumber ?? _currentCustomer?.phone;
+
+    if (targetPhone == null || targetPhone.isEmpty) {
+      _error = 'Phone number is required';
+      notifyListeners();
+      return false;
+    }
+
+    _setLoading(true);
+    try {
+      final result = await _paymentRepository.initiateMpesaStkPush(
+        phoneNumber: targetPhone,
+        amount: amount,
+        orderId: orderId,
+      );
+
+      debugPrint('M-Pesa STK Push initiated: $result');
+      _error = null;
+      return true;
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<bool> cancelOrder(String orderId, {String? reason}) async {
@@ -249,7 +277,7 @@ class CustomerOrderProvider extends ChangeNotifier {
         }
 
         // Notify driver if assigned
-        if (order!.driverId != null) {
+        if (order.driverId != null) {
           try {
             const uuid = Uuid();
             final notification = AppNotification(

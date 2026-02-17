@@ -51,7 +51,7 @@ class CustomerProfilePage extends StatelessWidget {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      // Profile Avatar with initials
+                      // Profile Avatar with Image Support
                       Container(
                         width: 100,
                         height: 100,
@@ -65,17 +65,31 @@ class CustomerProfilePage extends StatelessWidget {
                               offset: const Offset(0, 4),
                             ),
                           ],
+                          image:
+                              customer.profileImage != null &&
+                                  customer.profileImage!.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(customer.profileImage!),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
                         ),
-                        child: Center(
-                          child: Text(
-                            _getInitials(customer.companyName ?? customer.name),
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green.shade700,
-                            ),
-                          ),
-                        ),
+                        child:
+                            customer.profileImage == null ||
+                                customer.profileImage!.isEmpty
+                            ? Center(
+                                child: Text(
+                                  _getInitials(
+                                    customer.companyName ?? customer.name,
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade700,
+                                  ),
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(height: 16),
 

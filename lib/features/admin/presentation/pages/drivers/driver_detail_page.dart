@@ -119,17 +119,26 @@ class DriverDetailPage extends StatelessWidget {
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20),
+              image:
+                  driver.profileImage != null && driver.profileImage!.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(driver.profileImage!),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Center(
-              child: Text(
-                driver.name.substring(0, 1).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 32,
-                ),
-              ),
-            ),
+            child: driver.profileImage == null || driver.profileImage!.isEmpty
+                ? Center(
+                    child: Text(
+                      driver.name.substring(0, 1).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 32,
+                      ),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 20),
           Expanded(

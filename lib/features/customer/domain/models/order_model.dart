@@ -23,6 +23,7 @@ class Order {
   final String? cancellationReason;
   final double? companyCommission;
   final double? driverPayout;
+  final String paymentStatus; // 'unpaid', 'pending', 'paid'
   final Map<String, dynamic>? additionalInfo;
 
   Order({
@@ -48,6 +49,7 @@ class Order {
     this.cancellationReason,
     this.companyCommission,
     this.driverPayout,
+    this.paymentStatus = 'unpaid',
     this.additionalInfo,
   });
 
@@ -62,6 +64,7 @@ class Order {
       'order_date': orderDate.toIso8601String(),
       'cargo_type': cargoType,
       'total_cost': totalCost,
+      'payment_status': paymentStatus,
     };
 
     if (pickupDate != null) {
@@ -135,6 +138,8 @@ class Order {
       companyCommission:
           (json['company_commission'] ?? json['companyCommission'])?.toDouble(),
       driverPayout: (json['driver_payout'] ?? json['driverPayout'])?.toDouble(),
+      paymentStatus:
+          json['payment_status'] ?? json['paymentStatus'] ?? 'unpaid',
       additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
@@ -162,6 +167,7 @@ class Order {
     String? cancellationReason,
     double? companyCommission,
     double? driverPayout,
+    String? paymentStatus,
     Map<String, dynamic>? additionalInfo,
   }) {
     return Order(
@@ -187,6 +193,7 @@ class Order {
       cancellationReason: cancellationReason ?? this.cancellationReason,
       companyCommission: companyCommission ?? this.companyCommission,
       driverPayout: driverPayout ?? this.driverPayout,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
       additionalInfo: additionalInfo ?? this.additionalInfo,
     );
   }
@@ -199,6 +206,7 @@ class Order {
   bool get isPendingConfirmation => status == 'pending_confirmation';
   bool get isDelivered => status == 'delivered';
   bool get isCancelled => status == 'cancelled';
+  bool get isPaid => paymentStatus == 'paid';
 
   String get statusDisplayText {
     switch (status) {

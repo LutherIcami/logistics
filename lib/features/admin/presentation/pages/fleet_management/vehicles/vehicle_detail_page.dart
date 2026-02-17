@@ -29,7 +29,8 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
           actions: [
             IconButton(
               icon: const Icon(Icons.edit),
-              onPressed: () => context.push('/admin/fleet/vehicles/${vehicle.id}/edit'),
+              onPressed: () =>
+                  context.push('/admin/fleet/vehicles/${vehicle.id}/edit'),
               tooltip: 'Edit Vehicle',
             ),
             PopupMenuButton<String>(
@@ -60,6 +61,31 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Image Gallery
+                if (vehicle.images.isNotEmpty) ...[
+                  SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: vehicle.images.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          width: MediaQuery.of(context).size.width * 0.8,
+                          margin: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            image: DecorationImage(
+                              image: NetworkImage(vehicle.images[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
                 // Status Card
                 Container(
                   decoration: BoxDecoration(
@@ -105,7 +131,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                             Text(
                               vehicle.typeDisplayText,
                               style: TextStyle(
-                                color: vehicle.statusColor.withValues(alpha: 0.7),
+                                color: vehicle.statusColor.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 14,
                               ),
                             ),
@@ -132,9 +160,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 // Vehicle Information
                 Text(
                   'Vehicle Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -142,16 +170,26 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        _InfoRow(label: 'Registration', value: vehicle.registrationNumber),
+                        _InfoRow(
+                          label: 'Registration',
+                          value: vehicle.registrationNumber,
+                        ),
                         const Divider(),
-                        _InfoRow(label: 'Make/Model', value: '${vehicle.make} ${vehicle.model}'),
+                        _InfoRow(
+                          label: 'Make/Model',
+                          value: '${vehicle.make} ${vehicle.model}',
+                        ),
                         const Divider(),
                         _InfoRow(label: 'Year', value: vehicle.year.toString()),
                         const Divider(),
                         _InfoRow(label: 'Type', value: vehicle.typeDisplayText),
                         if (vehicle.loadCapacity != null) ...[
                           const Divider(),
-                          _InfoRow(label: 'Load Capacity', value: '${vehicle.loadCapacity!.toStringAsFixed(1)} tons'),
+                          _InfoRow(
+                            label: 'Load Capacity',
+                            value:
+                                '${vehicle.loadCapacity!.toStringAsFixed(1)} tons',
+                          ),
                         ],
                       ],
                     ),
@@ -162,9 +200,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 // Operational Status
                 Text(
                   'Operational Status',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -173,21 +211,42 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     child: Column(
                       children: [
                         if (vehicle.assignedDriverName != null) ...[
-                          _InfoRow(label: 'Assigned Driver', value: vehicle.assignedDriverName!),
+                          _InfoRow(
+                            label: 'Assigned Driver',
+                            value: vehicle.assignedDriverName!,
+                          ),
                           const Divider(),
                         ],
-                        _InfoRow(label: 'Current Location', value: vehicle.currentLocation ?? 'Not set'),
+                        _InfoRow(
+                          label: 'Current Location',
+                          value: vehicle.currentLocation ?? 'Not set',
+                        ),
                         const Divider(),
-                        _InfoRow(label: 'Mileage', value: '${vehicle.mileage.toStringAsFixed(0)} km'),
+                        _InfoRow(
+                          label: 'Mileage',
+                          value: '${vehicle.mileage.toStringAsFixed(0)} km',
+                        ),
                         const Divider(),
-                        _InfoRow(label: 'Fuel Level', value: '${vehicle.fuelLevelPercentage.toStringAsFixed(0)}% (${vehicle.currentFuelLevel.toStringAsFixed(0)}L / ${vehicle.fuelCapacity.toStringAsFixed(0)}L)'),
+                        _InfoRow(
+                          label: 'Fuel Level',
+                          value:
+                              '${vehicle.fuelLevelPercentage.toStringAsFixed(0)}% (${vehicle.currentFuelLevel.toStringAsFixed(0)}L / ${vehicle.fuelCapacity.toStringAsFixed(0)}L)',
+                        ),
                         if (vehicle.purchasePrice != null) ...[
                           const Divider(),
-                          _InfoRow(label: 'Purchase Price', value: 'KES ${vehicle.purchasePrice!.toStringAsFixed(0)}'),
+                          _InfoRow(
+                            label: 'Purchase Price',
+                            value:
+                                'KES ${vehicle.purchasePrice!.toStringAsFixed(0)}',
+                          ),
                         ],
                         if (vehicle.currentValue != null) ...[
                           const Divider(),
-                          _InfoRow(label: 'Current Value', value: 'KES ${vehicle.currentValue!.toStringAsFixed(0)}'),
+                          _InfoRow(
+                            label: 'Current Value',
+                            value:
+                                'KES ${vehicle.currentValue!.toStringAsFixed(0)}',
+                          ),
                         ],
                       ],
                     ),
@@ -198,9 +257,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 // Maintenance & Compliance
                 Text(
                   'Maintenance & Compliance',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -211,15 +270,21 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         if (vehicle.lastMaintenanceDate != null) ...[
                           _InfoRow(
                             label: 'Last Maintenance',
-                            value: DateFormat('MMM dd, yyyy').format(vehicle.lastMaintenanceDate!),
+                            value: DateFormat(
+                              'MMM dd, yyyy',
+                            ).format(vehicle.lastMaintenanceDate!),
                           ),
                           const Divider(),
                         ],
                         if (vehicle.nextMaintenanceDate != null) ...[
                           _InfoRow(
                             label: 'Next Maintenance',
-                            value: DateFormat('MMM dd, yyyy').format(vehicle.nextMaintenanceDate!),
-                            color: vehicle.needsMaintenance ? Colors.orange : null,
+                            value: DateFormat(
+                              'MMM dd, yyyy',
+                            ).format(vehicle.nextMaintenanceDate!),
+                            color: vehicle.needsMaintenance
+                                ? Colors.orange
+                                : null,
                           ),
                           if (vehicle.needsMaintenance) ...[
                             const SizedBox(height: 8),
@@ -231,7 +296,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                               ),
                               child: const Row(
                                 children: [
-                                  Icon(Icons.warning, color: Colors.orange, size: 16),
+                                  Icon(
+                                    Icons.warning,
+                                    color: Colors.orange,
+                                    size: 16,
+                                  ),
                                   SizedBox(width: 8),
                                   Text(
                                     'Maintenance is overdue!',
@@ -290,7 +359,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                             ),
                             child: const Row(
                               children: [
-                                Icon(Icons.error_outline, color: Colors.red, size: 16),
+                                Icon(
+                                  Icons.error_outline,
+                                  color: Colors.red,
+                                  size: 16,
+                                ),
                                 SizedBox(width: 8),
                                 Text(
                                   'License has expired!',
@@ -312,9 +385,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 // Purchase Information
                 Text(
                   'Purchase Information',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 Card(
@@ -324,33 +397,38 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                       children: [
                         _InfoRow(
                           label: 'Purchase Date',
-                          value: DateFormat('MMM dd, yyyy').format(vehicle.purchaseDate),
+                          value: DateFormat(
+                            'MMM dd, yyyy',
+                          ).format(vehicle.purchaseDate),
                         ),
                         if (vehicle.purchasePrice != null) ...[
                           const Divider(),
                           _InfoRow(
                             label: 'Purchase Price',
-                            value: 'KES ${vehicle.purchasePrice!.toStringAsFixed(0)}',
+                            value:
+                                'KES ${vehicle.purchasePrice!.toStringAsFixed(0)}',
                           ),
                         ],
                         if (vehicle.currentValue != null) ...[
                           const Divider(),
                           _InfoRow(
                             label: 'Current Value',
-                            value: 'KES ${vehicle.currentValue!.toStringAsFixed(0)}',
+                            value:
+                                'KES ${vehicle.currentValue!.toStringAsFixed(0)}',
                           ),
                         ],
                       ],
                     ),
                   ),
                 ),
-                if (vehicle.specifications != null && vehicle.specifications!.isNotEmpty) ...[
+                if (vehicle.specifications != null &&
+                    vehicle.specifications!.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Text(
                     'Specifications',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Card(
@@ -360,8 +438,13 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                         children: vehicle.specifications!.entries.map((entry) {
                           return Column(
                             children: [
-                              _InfoRow(label: entry.key, value: entry.value.toString()),
-                              if (entry.key != vehicle.specifications!.keys.last) const Divider(),
+                              _InfoRow(
+                                label: entry.key,
+                                value: entry.value.toString(),
+                              ),
+                              if (entry.key !=
+                                  vehicle.specifications!.keys.last)
+                                const Divider(),
                             ],
                           );
                         }).toList(),
@@ -385,7 +468,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Schedule Maintenance'),
-        content: const Text('Mark maintenance as completed and schedule next service?'),
+        content: const Text(
+          'Mark maintenance as completed and schedule next service?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -403,11 +488,15 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 Navigator.of(context).pop();
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Maintenance scheduled successfully')),
+                    const SnackBar(
+                      content: Text('Maintenance scheduled successfully'),
+                    ),
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Failed to schedule maintenance')),
+                    const SnackBar(
+                      content: Text('Failed to schedule maintenance'),
+                    ),
                   );
                 }
               }
@@ -424,7 +513,9 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Vehicle'),
-        content: Text('Are you sure you want to delete ${vehicle.displayName}? This action cannot be undone.'),
+        content: Text(
+          'Are you sure you want to delete ${vehicle.displayName}? This action cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -438,7 +529,11 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                 Navigator.of(context).pop();
                 if (success) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${vehicle.displayName} deleted successfully')),
+                    SnackBar(
+                      content: Text(
+                        '${vehicle.displayName} deleted successfully',
+                      ),
+                    ),
                   );
                   context.go('/admin/fleet');
                 } else {
@@ -457,11 +552,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.label,
-    required this.value,
-    this.color,
-  });
+  const _InfoRow({required this.label, required this.value, this.color});
 
   final String label;
   final String value;
@@ -474,13 +565,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
           Text(
             value,
             style: TextStyle(
