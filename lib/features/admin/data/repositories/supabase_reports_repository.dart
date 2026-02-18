@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../domain/models/report_models.dart';
 import 'reports_repository.dart';
@@ -93,17 +94,17 @@ class SupabaseReportsRepository implements ReportsRepository {
   @override
   Future<List<DriverPerformanceStat>> getDriverPerformance() async {
     try {
-      print('Fetching driver performance stats...');
+      debugPrint('Fetching driver performance stats...');
       final response = await client.rpc('get_driver_performance_stats');
-      print('Driver performance response: $response');
+      debugPrint('Driver performance response: $response');
 
       if (response == null) {
-        print('Driver performance response is null');
+        debugPrint('Driver performance response is null');
         return [];
       }
 
       final list = (response as List).map((json) {
-        print('Processing driver: ${json['driver_name']}');
+        debugPrint('Processing driver: ${json['driver_name']}');
         return DriverPerformanceStat(
           driverId: json['driver_id'] as String,
           driverName: json['driver_name'] as String,
@@ -115,11 +116,11 @@ class SupabaseReportsRepository implements ReportsRepository {
         );
       }).toList();
 
-      print('Fetched ${list.length} drivers');
+      debugPrint('Fetched ${list.length} drivers');
       return list;
     } catch (e, stackTrace) {
-      print('Error loading driver performance: $e');
-      print('Stack trace: $stackTrace');
+      debugPrint('Error loading driver performance: $e');
+      debugPrint('Stack trace: $stackTrace');
       return [];
     }
   }

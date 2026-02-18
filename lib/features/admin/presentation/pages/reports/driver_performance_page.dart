@@ -76,7 +76,7 @@ class _DriverPerformancePageState extends State<DriverPerformancePage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: filteredDrivers.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                           const SizedBox(height: AnalyticsTheme.spacingM),
                       itemBuilder: (context, index) {
                         return _DriverPerformanceCard(
@@ -279,7 +279,7 @@ class _DriverPerformanceCard extends StatelessWidget {
         color: AnalyticsTheme.cardWhite,
         borderRadius: BorderRadius.circular(AnalyticsTheme.radiusL),
         boxShadow: AnalyticsTheme.cardShadow,
-        border: Border.all(color: ratingColor.withOpacity(0.2), width: 2),
+        border: Border.all(color: ratingColor.withValues(alpha: 0.2), width: 2),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,12 +293,12 @@ class _DriverPerformanceCard extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [ratingColor, ratingColor.withOpacity(0.7)],
+                    colors: [ratingColor, ratingColor.withValues(alpha: 0.7)],
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: ratingColor.withOpacity(0.3),
+                      color: ratingColor.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -343,7 +343,7 @@ class _DriverPerformanceCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: ratingColor.withOpacity(0.1),
+                            color: ratingColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(
                               AnalyticsTheme.radiusS,
                             ),

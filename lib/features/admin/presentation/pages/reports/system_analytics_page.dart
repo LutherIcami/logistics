@@ -291,8 +291,8 @@ class _SystemAnalyticsPageState extends State<SystemAnalyticsPage> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          AnalyticsTheme.primaryBlue.withOpacity(0.2),
-                          AnalyticsTheme.primaryBlue.withOpacity(0.0),
+                          AnalyticsTheme.primaryBlue.withValues(alpha: 0.2),
+                          AnalyticsTheme.primaryBlue.withValues(alpha: 0.0),
                         ],
                       ),
                     ),
@@ -646,7 +646,7 @@ class _MetricCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AnalyticsTheme.radiusM),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -661,7 +661,7 @@ class _MetricCard extends StatelessWidget {
                       (trendUp
                               ? AnalyticsTheme.primaryGreen
                               : AnalyticsTheme.primaryRed)
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AnalyticsTheme.radiusS),
                 ),
                 child: Row(

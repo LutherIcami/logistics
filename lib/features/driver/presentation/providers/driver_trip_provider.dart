@@ -200,12 +200,20 @@ class DriverTripProvider extends ChangeNotifier {
     _tripSubscription?.cancel();
     if (_currentDriverId == null) return;
 
-    _tripSubscription = _tripRepository.streamTrips(_currentDriverId!).listen((
-      data,
-    ) {
-      _trips = data;
-      notifyListeners();
-    });
+    _tripSubscription = _tripRepository
+        .streamTrips(_currentDriverId!)
+        .listen(
+          (data) {
+            debugPrint('REALTIME: Received ${data.length} trips for driver');
+            _trips = data;
+            notifyListeners();
+          },
+          onError: (e) {
+            debugPrint('REALTIME_ERROR: Trip stream failed: $e');
+            _error = 'Real-time connection lost. Please pull to refresh.';
+            notifyListeners();
+          },
+        );
   }
 
   void _initNotificationStream() {

@@ -408,7 +408,7 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
                       const SizedBox(width: 16),
                       Expanded(
                         child: DropdownButtonFormField<String>(
-                          value: _type,
+                          initialValue: _type,
                           decoration: _inputDecoration(
                             label: 'Fleet Category',
                             icon: Icons.category_rounded,
@@ -533,7 +533,7 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
                           hintText: 'Select driver from fleet',
                         ),
                         isExpanded: true,
-                        value: selectedDriver,
+                        initialValue: selectedDriver,
                         items: [
                           const DropdownMenuItem<Driver>(
                             value: null,

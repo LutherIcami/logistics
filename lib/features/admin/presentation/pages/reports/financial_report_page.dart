@@ -109,10 +109,10 @@ class _FinancialReportPageState extends State<FinancialReportPage> {
             vertical: AnalyticsTheme.spacingS,
           ),
           decoration: BoxDecoration(
-            color: AnalyticsTheme.primaryBlue.withOpacity(0.1),
+            color: AnalyticsTheme.primaryBlue.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(AnalyticsTheme.radiusS),
             border: Border.all(
-              color: AnalyticsTheme.primaryBlue.withOpacity(0.3),
+              color: AnalyticsTheme.primaryBlue.withValues(alpha: 0.3),
             ),
           ),
           child: Row(
@@ -539,13 +539,13 @@ class _FinancialReportPageState extends State<FinancialReportPage> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AnalyticsTheme.primaryGreen.withOpacity(0.05),
-                  AnalyticsTheme.primaryTeal.withOpacity(0.05),
+                  AnalyticsTheme.primaryGreen.withValues(alpha: 0.05),
+                  AnalyticsTheme.primaryTeal.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: BorderRadius.circular(AnalyticsTheme.radiusM),
               border: Border.all(
-                color: AnalyticsTheme.primaryGreen.withOpacity(0.2),
+                color: AnalyticsTheme.primaryGreen.withValues(alpha: 0.2),
               ),
             ),
             child: Row(

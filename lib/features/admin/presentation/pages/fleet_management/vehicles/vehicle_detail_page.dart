@@ -590,7 +590,7 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     fillColor: Colors.grey[50],
                   ),
                   isExpanded: true,
-                  value: selectedDriver,
+                  initialValue: selectedDriver,
                   items: [
                     ...drivers.map(
                       (d) => DropdownMenuItem(
