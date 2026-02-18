@@ -51,23 +51,7 @@ class AdminNotificationsPage extends StatelessWidget {
   ) {
     final List<_NotificationData> list = [];
 
-    // 1. Profile Incomplete Alert
-    final user = authProvider.user;
-    if (user != null && !user.isProfileComplete) {
-      list.add(
-        _NotificationData(
-          id: 'profile-incomplete',
-          title: 'Profile Incomplete',
-          message:
-              'Please update your profile details (avatar and full name) to ensure full system access.',
-          time: DateTime.now(),
-          type: NotificationType.summary,
-          isRead: authProvider.isNotificationRead('profile-incomplete'),
-        ),
-      );
-    }
-
-    // 2. Urgent Maintenance Alerts
+    // 1. Urgent Maintenance Alerts
     final overdueVehicles = vehicleProvider.vehicles
         .where((v) => v.isMaintenanceOverdue)
         .toList();

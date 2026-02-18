@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 
 -- Policies
+DROP POLICY IF EXISTS "Customers can view their own payments" ON public.payments;
 CREATE POLICY "Customers can view their own payments" ON public.payments
     FOR SELECT USING (auth.uid() = "customerId");
 
@@ -47,6 +48,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS on_mpesa_payment_update ON public.payments;
 CREATE TRIGGER on_mpesa_payment_update
     AFTER UPDATE ON public.payments
     FOR EACH ROW

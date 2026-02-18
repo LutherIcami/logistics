@@ -362,6 +362,13 @@ class AdminDashboard extends StatelessWidget {
           color: Colors.green,
           onTap: () => context.go('/admin/finance'),
         ),
+        AdminModuleCard(
+          title: 'Analytics Forge',
+          subtitle: 'Performance insights',
+          icon: Icons.analytics_rounded,
+          color: Colors.deepPurple,
+          onTap: () => context.go('/admin/reports'),
+        ),
       ],
     );
   }

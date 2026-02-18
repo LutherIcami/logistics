@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_file_plus/open_file_plus.dart';
 import '../../../providers/finance_provider.dart';
 import '../../../../domain/models/finance_models.dart';
 
@@ -13,7 +17,7 @@ class InvoiceDetailPage extends StatelessWidget {
 
   const InvoiceDetailPage({super.key, required this.invoiceId});
 
-  Future<void> _generatePdf(Invoice invoice) async {
+  Future<Uint8List> _generatePdfData(Invoice invoice) async {
     final pdf = pw.Document();
 
     pdf.addPage(
@@ -132,9 +136,74 @@ class InvoiceDetailPage extends StatelessWidget {
       ),
     );
 
-    // Share or Print the PDF
+    return pdf.save();
+  }
+
+  Future<void> _downloadPdf(BuildContext context, Invoice invoice) async {
+    try {
+      final pdfData = await _generatePdfData(invoice);
+      final fileName = 'invoice_${invoice.id}.pdf';
+
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        // Desktop: Save to Downloads folder explicitly
+        final downloadsDir = await getDownloadsDirectory();
+
+        if (downloadsDir != null) {
+          final filePath =
+              '${downloadsDir.path}${Platform.pathSeparator}$fileName';
+          final file = File(filePath);
+          await file.writeAsBytes(pdfData);
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Saved to Downloads: $filePath'),
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Open Folder',
+                  onPressed: () {
+                    // Open the folder containing the file
+                    if (Platform.isWindows) {
+                      Process.run('explorer.exe', ['/select,', filePath]);
+                    } else if (Platform.isMacOS) {
+                      Process.run('open', ['-R', filePath]);
+                    }
+                  },
+                ),
+              ),
+            );
+
+            // Try to open safely
+            try {
+              final result = await OpenFile.open(filePath);
+              if (result.type != ResultType.done &&
+                  result.type != ResultType.noAppToOpen) {
+                debugPrint('Could not open file: ${result.message}');
+              }
+            } catch (_) {
+              // Ignore opening errors on Windows if no app associated
+            }
+          }
+          return;
+        }
+      }
+
+      // Fallback for mobile
+      await Printing.sharePdf(bytes: pdfData, filename: fileName);
+    } catch (e) {
+      debugPrint('Error generating PDF: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to download invoice')),
+        );
+      }
+    }
+  }
+
+  Future<void> _printPdf(Invoice invoice) async {
+    final pdfData = await _generatePdfData(invoice);
     await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => pdf.save(),
+      onLayout: (PdfPageFormat format) async => pdfData,
       name: 'invoice_${invoice.id}.pdf',
     );
   }
@@ -151,12 +220,18 @@ class InvoiceDetailPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Invoice Details'),
         actions: [
-          if (invoice != null)
+          if (invoice != null) ...[
             IconButton(
               icon: const Icon(Icons.download_rounded),
-              tooltip: 'Download PDF',
-              onPressed: () => _generatePdf(invoice),
+              tooltip: 'Download / Export',
+              onPressed: () => _downloadPdf(context, invoice),
             ),
+            IconButton(
+              icon: const Icon(Icons.print_rounded),
+              tooltip: 'Print Invoice',
+              onPressed: () => _printPdf(invoice),
+            ),
+          ],
         ],
       ),
       body: Builder(
@@ -324,21 +399,40 @@ class InvoiceDetailPage extends StatelessWidget {
                 ],
 
                 // Actions Section
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _generatePdf(invoice),
-                    icon: const Icon(Icons.picture_as_pdf_rounded),
-                    label: const Text('Download PDF Invoice'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _downloadPdf(context, invoice),
+                        icon: const Icon(Icons.file_download_outlined),
+                        label: const Text('Download'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () => _printPdf(invoice),
+                        icon: const Icon(Icons.print_rounded),
+                        label: const Text('Print Now'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.indigo,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 if (invoice.status == InvoiceStatus.sent ||

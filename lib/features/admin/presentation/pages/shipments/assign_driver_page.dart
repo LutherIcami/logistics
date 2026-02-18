@@ -319,12 +319,25 @@ class _AssignDriverPageState extends State<AssignDriverPage> {
         onChanged: (value) {
           setState(() {
             _selectedDriver = value;
-            if (value?.currentVehicle != null) {
+            _selectedVehicle = null; // Reset vehicle selection
+
+            if (value != null) {
+              // Priority 1: Check for permanently assigned vehicle
               try {
-                _selectedVehicle = vehicles.firstWhere(
-                  (v) => v.registrationNumber == value!.currentVehicle,
+                final assignedVehicle = vehicles.firstWhere(
+                  (v) => v.assignedDriverId == value.id,
                 );
-              } catch (_) {}
+                _selectedVehicle = assignedVehicle;
+              } catch (_) {
+                // Priority 2: Check for currently driven vehicle (fallback)
+                if (value.currentVehicle != null) {
+                  try {
+                    _selectedVehicle = vehicles.firstWhere(
+                      (v) => v.registrationNumber == value.currentVehicle,
+                    );
+                  } catch (_) {}
+                }
+              }
             }
           });
         },

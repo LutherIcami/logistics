@@ -104,6 +104,7 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
   Widget build(BuildContext context) {
     final tripProvider = context.watch<DriverTripProvider>();
     final vehicle = tripProvider.assignedVehicle;
+    final driver = tripProvider.currentDriver;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -120,52 +121,36 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Vehicle Info Card
-              if (vehicle != null)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.build_circle_rounded,
-                          color: Colors.blue,
-                          size: 32,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            vehicle.registrationNumber,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${vehicle.make} ${vehicle.model}',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+              // Auto-filled Info Section
+              const Text(
+                'Report Details',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
                 ),
+              ),
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildReadOnlyField(
+                      label: 'Vehicle',
+                      value: vehicle?.registrationNumber ?? 'No Vehicle',
+                      icon: Icons.directions_car_filled_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildReadOnlyField(
+                      label: 'Reported By',
+                      value: driver?.name ?? 'Unknown Driver',
+                      icon: Icons.person_rounded,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 32),
 
               const Text(
@@ -187,6 +172,7 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<MaintenanceType>(
@@ -271,26 +257,49 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
               ),
               const SizedBox(height: 48),
 
-              SizedBox(
+              Container(
                 width: double.infinity,
                 height: 56,
-                child: FilledButton(
-                  onPressed: _isSubmitting ? null : _submitReport,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF1E293B),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  child: _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
+                  ],
+                ),
+                child: FilledButton.icon(
+                  onPressed: _isSubmitting ? null : _submitReport,
+                  icon: _isSubmitting
+                      ? const SizedBox.shrink()
+                      : const Icon(Icons.send_rounded),
+                  label: _isSubmitting
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text(
-                          'Submit Maintenance Report',
+                          'SUBMIT REPORT',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
                           ),
                         ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0, // Shadow handled by Container
+                  ),
                 ),
               ),
             ],
@@ -313,9 +322,14 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
       keyboardType: keyboardType,
       validator: validator,
       maxLines: maxLines,
+      style: const TextStyle(
+        color: Color(0xFF0F172A),
+        fontWeight: FontWeight.w500,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: TextStyle(color: Colors.grey[600]),
+        prefixIcon: Icon(icon, color: Colors.blue),
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
@@ -329,6 +343,36 @@ class _MaintenanceReportPageState extends State<MaintenanceReportPage> {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Colors.blue, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    return TextFormField(
+      initialValue: value,
+      readOnly: true,
+      style: const TextStyle(
+        color: Color(0xFF0F172A),
+        fontWeight: FontWeight.bold,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(color: Colors.grey[600]),
+        prefixIcon: Icon(icon, color: Colors.grey),
+        filled: true,
+        fillColor: Colors.grey.shade200,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
         ),
       ),
     );

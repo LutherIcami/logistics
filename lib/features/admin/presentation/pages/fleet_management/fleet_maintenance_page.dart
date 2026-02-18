@@ -148,7 +148,7 @@ class _FleetMaintenancePageState extends State<FleetMaintenancePage>
               '${log.vehicleRegistration} - ${log.type.name.toUpperCase()}',
             ),
             subtitle: Text(
-              '${log.description}\n${log.serviceProvider ?? "Unknown Provider"}',
+              '${log.description}\nReported by: ${log.driverName} • ${log.serviceProvider ?? "Unknown Provider"}',
             ),
             onTap: () => _showServiceLogDetail(context, log),
             trailing: Column(
@@ -273,6 +273,7 @@ class _FleetMaintenancePageState extends State<FleetMaintenancePage>
                 value: log.date.toString().split(' ')[0],
               ),
               _DetailRow(label: 'Odometer', value: '${log.odometer} km'),
+              _DetailRow(label: 'Reported By', value: log.driverName),
               _DetailRow(
                 label: 'Provider',
                 value: log.serviceProvider ?? 'N/A',

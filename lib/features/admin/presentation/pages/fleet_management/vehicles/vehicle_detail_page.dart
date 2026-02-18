@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import '../../../providers/driver_provider.dart';
 import '../../../providers/vehicle_provider.dart';
 import '../../base_module_page.dart';
+import '../../../../domain/models/driver_model.dart';
 
 class VehicleDetailPage extends StatefulWidget {
   final String vehicleId;
@@ -15,6 +17,14 @@ class VehicleDetailPage extends StatefulWidget {
 }
 
 class _VehicleDetailPageState extends State<VehicleDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DriverProvider>().loadInitialDrivers();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<VehicleProvider>(
@@ -210,13 +220,44 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        if (vehicle.assignedDriverName != null) ...[
-                          _InfoRow(
-                            label: 'Assigned Driver',
-                            value: vehicle.assignedDriverName!,
-                          ),
-                          const Divider(),
-                        ],
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Assigned Driver',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  vehicle.assignedDriverName ?? 'Not Assigned',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    color: vehicle.assignedDriverName != null
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit_rounded,
+                                    size: 20,
+                                    color: Colors.blue,
+                                  ),
+                                  onPressed: () =>
+                                      _showAssignDriverDialog(context, vehicle),
+                                  tooltip: 'Change Assignment',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const Divider(),
                         _InfoRow(
                           label: 'Current Location',
                           value: vehicle.currentLocation ?? 'Not set',
@@ -504,6 +545,131 @@ class _VehicleDetailPageState extends State<VehicleDetailPage> {
             child: const Text('Schedule'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAssignDriverDialog(BuildContext context, dynamic vehicle) {
+    // Determine current driver
+    Driver? selectedDriver;
+    final drivers = context.read<DriverProvider>().drivers;
+
+    // Safety check - filter out drivers already assigned to OTHER vehicles logic?
+    // For now allow re-assigning (backend should handle swap or just overwrite)
+
+    try {
+      if (vehicle.assignedDriverId != null) {
+        selectedDriver = drivers.firstWhere(
+          (d) => d.id == vehicle.assignedDriverId,
+        );
+      }
+    } catch (_) {}
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Assign Driver'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Select a driver to assign to this vehicle. This will link the vehicle to the driver for future trips.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<Driver>(
+                  decoration: InputDecoration(
+                    labelText: 'Driver',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                  ),
+                  isExpanded: true,
+                  value: selectedDriver,
+                  items: [
+                    ...drivers.map(
+                      (d) => DropdownMenuItem(
+                        value: d,
+                        child: Text(d.name, overflow: TextOverflow.ellipsis),
+                      ),
+                    ),
+                  ],
+                  onChanged: (v) => setState(() => selectedDriver = v),
+                ),
+              ],
+            ),
+            actions: [
+              if (vehicle.assignedDriverId != null)
+                TextButton(
+                  onPressed: () async {
+                    // Unassign logic
+                    final provider = context.read<VehicleProvider>();
+                    final updatedVehicle = vehicle.copyWith(
+                      unassignDriver: true,
+                    );
+                    final success = await provider.updateVehicle(
+                      updatedVehicle,
+                    );
+                    if (context.mounted) {
+                      Navigator.pop(context);
+                      if (success) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Driver unassigned successfully'),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text(
+                    'Unassign',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  if (selectedDriver == null) return;
+
+                  final provider = context.read<VehicleProvider>();
+                  final updatedVehicle = vehicle.copyWith(
+                    assignedDriverId: selectedDriver!.id,
+                    assignedDriverName: selectedDriver!.name,
+                  );
+
+                  final success = await provider.updateVehicle(updatedVehicle);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    if (success) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${selectedDriver!.name} assigned successfully',
+                          ),
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Failed to assign driver'),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

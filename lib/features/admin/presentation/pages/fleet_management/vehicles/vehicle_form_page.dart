@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/models/vehicle_model.dart';
+import '../../../../domain/models/driver_model.dart';
 import '../../../providers/vehicle_provider.dart';
+import '../../../providers/driver_provider.dart';
 import '../../base_module_page.dart';
 import '../../../../../../core/widgets/vehicle_image_picker.dart';
 
@@ -37,6 +39,8 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
 
   String _type = 'truck';
   String _status = 'active';
+  String? _assignedDriverId;
+  String? _assignedDriverName;
   bool _isLoading = false;
   List<File> _vehicleImages = [];
   List<String> _existingImageUrls = []; // Track existing URLs
@@ -44,6 +48,9 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DriverProvider>().loadInitialDrivers();
+    });
     _loadExistingIfEdit();
   }
 
@@ -70,6 +77,8 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
         _insuranceExpiryController.text = vehicle.insuranceExpiry ?? '';
         _licenseExpiryController.text = vehicle.licenseExpiry ?? '';
         _existingImageUrls = vehicle.images;
+        _assignedDriverId = vehicle.assignedDriverId;
+        _assignedDriverName = vehicle.assignedDriverName;
       });
     }
   }
@@ -179,6 +188,8 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
             ? null
             : _licenseExpiryController.text.trim(),
         images: finalImageUrls,
+        assignedDriverId: _assignedDriverId,
+        assignedDriverName: _assignedDriverName,
       );
 
       final success = widget.isEdit
@@ -494,6 +505,65 @@ class _VehicleFormPageState extends State<VehicleFormPage> {
                     icon: Icons.location_on_rounded,
                   ),
                 ],
+              ),
+              const SizedBox(height: 20),
+
+              // Personnel Assignment
+              Consumer<DriverProvider>(
+                builder: (context, driverProvider, _) {
+                  // Find selected driver object if ID exists
+                  Driver? selectedDriver;
+                  if (_assignedDriverId != null) {
+                    try {
+                      selectedDriver = driverProvider.drivers.firstWhere(
+                        (d) => d.id == _assignedDriverId,
+                      );
+                    } catch (_) {}
+                  }
+
+                  return _buildSection(
+                    title: 'Personnel Assignment',
+                    subtitle: 'Assign a designated driver',
+                    icon: Icons.person_pin_rounded,
+                    children: [
+                      DropdownButtonFormField<Driver>(
+                        decoration: _inputDecoration(
+                          label: 'Assigned Driver',
+                          icon: Icons.person_rounded,
+                          hintText: 'Select driver from fleet',
+                        ),
+                        isExpanded: true,
+                        value: selectedDriver,
+                        items: [
+                          const DropdownMenuItem<Driver>(
+                            value: null,
+                            child: Text(
+                              'Unassigned',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                          ...driverProvider.drivers.map((d) {
+                            return DropdownMenuItem(
+                              value: d,
+                              child: Text('${d.name} (${d.totalTrips} trips)'),
+                            );
+                          }),
+                        ],
+                        onChanged: (driver) {
+                          setState(() {
+                            if (driver == null) {
+                              _assignedDriverId = null;
+                              _assignedDriverName = null;
+                            } else {
+                              _assignedDriverId = driver.id;
+                              _assignedDriverName = driver.name;
+                            }
+                          });
+                        },
+                      ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 20),
 

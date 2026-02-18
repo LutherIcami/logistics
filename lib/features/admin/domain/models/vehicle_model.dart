@@ -63,9 +63,8 @@ class Vehicle {
       'year': year,
       'type': type,
       'status': status,
-      if (assignedDriverId != null) 'assigned_driver_id': assignedDriverId,
-      if (assignedDriverName != null)
-        'assigned_driver_name': assignedDriverName,
+      'assigned_driver_id': assignedDriverId,
+      'assigned_driver_name': assignedDriverName,
       'fuel_capacity': fuelCapacity,
       'current_fuel_level': currentFuelLevel,
       'mileage': mileage,
@@ -156,6 +155,7 @@ class Vehicle {
     List<String>? images,
     Map<String, dynamic>? specifications,
     Map<String, dynamic>? additionalInfo,
+    bool unassignDriver = false,
   }) {
     return Vehicle(
       id: id ?? this.id,
@@ -165,8 +165,12 @@ class Vehicle {
       year: year ?? this.year,
       type: type ?? this.type,
       status: status ?? this.status,
-      assignedDriverId: assignedDriverId ?? this.assignedDriverId,
-      assignedDriverName: assignedDriverName ?? this.assignedDriverName,
+      assignedDriverId: unassignDriver
+          ? null
+          : (assignedDriverId ?? this.assignedDriverId),
+      assignedDriverName: unassignDriver
+          ? null
+          : (assignedDriverName ?? this.assignedDriverName),
       fuelCapacity: fuelCapacity ?? this.fuelCapacity,
       currentFuelLevel: currentFuelLevel ?? this.currentFuelLevel,
       mileage: mileage ?? this.mileage,

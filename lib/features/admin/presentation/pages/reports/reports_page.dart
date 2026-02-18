@@ -28,6 +28,15 @@ class ReportsPage extends StatelessWidget {
           const SizedBox(height: 32),
           _buildReportActionCard(
             context,
+            title: 'System Overview',
+            subtitle: 'Comprehensive performance dashboard',
+            icon: Icons.dashboard_rounded,
+            color: Colors.purple,
+            onTap: () => context.go('/admin/reports/system'),
+          ),
+          const SizedBox(height: 16),
+          _buildReportActionCard(
+            context,
             title: 'Financial Ledger',
             subtitle: 'Revenue, expenses, and profit margins',
             icon: Icons.account_balance_rounded,

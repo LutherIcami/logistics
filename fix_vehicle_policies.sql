@@ -37,6 +37,7 @@ USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'a
 -- Drop existing driver policies
 DROP POLICY IF EXISTS "Drivers viewable by authenticated" ON public.drivers;
 DROP POLICY IF EXISTS "Update own driver profile" ON public.drivers;
+DROP POLICY IF EXISTS "Drivers can update own profile" ON public.drivers;
 DROP POLICY IF EXISTS "Admins can insert drivers" ON public.drivers;
 DROP POLICY IF EXISTS "Admins can update drivers" ON public.drivers;
 DROP POLICY IF EXISTS "Admins can delete drivers" ON public.drivers;
