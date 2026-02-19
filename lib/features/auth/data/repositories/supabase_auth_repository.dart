@@ -69,7 +69,7 @@ class SupabaseAuthRepository implements AuthRepository {
           'phone': '', // To be filled during onboarding
           'status': 'active',
           'rating': 5.0, // Start with a perfect rating
-          'joinDate': DateTime.now().toIso8601String(),
+          'join_date': DateTime.now().toIso8601String(),
         });
       } else if (role == 'customer') {
         // Initialize the customer record
@@ -78,9 +78,9 @@ class SupabaseAuthRepository implements AuthRepository {
           'name': fullName,
           'email': email,
           'phone': '', // To be filled during onboarding/first order
-          'joinDate': DateTime.now().toIso8601String(),
-          'totalOrders': 0,
-          'totalSpent': 0.0,
+          'join_date': DateTime.now().toIso8601String(),
+          'total_orders': 0,
+          'total_spent': 0.0,
         });
       }
 
@@ -154,7 +154,7 @@ class SupabaseAuthRepository implements AuthRepository {
     try {
       await client.auth.resetPasswordForEmail(
         email,
-        redirectTo: 'io.supabase.logistics://reset-password',
+        redirectTo: 'io.supabase.projo://reset-password',
       );
       return const Right(null);
     } catch (e) {

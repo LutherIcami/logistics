@@ -35,15 +35,15 @@ class Customer {
       'name': name,
       'email': email,
       'phone': phone,
-      'companyName': companyName,
+      'company_name': companyName,
       'address': address,
       'city': city,
       'country': country,
-      'joinDate': joinDate.toIso8601String(),
-      'totalOrders': totalOrders,
-      'totalSpent': totalSpent,
-      'profileImage': profileImage,
-      'additionalInfo': additionalInfo,
+      'join_date': joinDate.toIso8601String(),
+      'total_orders': totalOrders,
+      'total_spent': totalSpent,
+      'profile_image': profileImage,
+      'additional_info': additionalInfo,
     };
   }
 
@@ -52,16 +52,20 @@ class Customer {
       id: json['id'],
       name: json['name'],
       email: json['email'],
-      phone: json['phone'],
-      companyName: json['companyName'],
+      phone: json['phone'] ?? '',
+      companyName: json['company_name'] ?? json['companyName'],
       address: json['address'],
       city: json['city'],
       country: json['country'],
-      joinDate: DateTime.parse(json['joinDate']),
-      totalOrders: json['totalOrders'] ?? 0,
-      totalSpent: (json['totalSpent'] ?? 0.0).toDouble(),
-      profileImage: json['profileImage'],
-      additionalInfo: json['additionalInfo'],
+      joinDate: DateTime.parse(
+        json['join_date'] ??
+            json['joinDate'] ??
+            DateTime.now().toIso8601String(),
+      ),
+      totalOrders: json['total_orders'] ?? json['totalOrders'] ?? 0,
+      totalSpent: (json['total_spent'] ?? json['totalSpent'] ?? 0.0).toDouble(),
+      profileImage: json['profile_image'] ?? json['profileImage'],
+      additionalInfo: json['additional_info'] ?? json['additionalInfo'],
     );
   }
 

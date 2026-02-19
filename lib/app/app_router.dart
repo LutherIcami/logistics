@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/pages/login_page.dart';
 import '../features/auth/presentation/pages/register_page.dart';
@@ -54,7 +55,16 @@ import '../features/chat/presentation/pages/chat_page.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
+  errorBuilder: (context, state) =>
+      Scaffold(body: Center(child: Text('Routing Error: ${state.error}'))),
   routes: [
+    GoRoute(
+      path: '/',
+      redirect: (context, state) {
+        debugPrint('ROUTER: Redirecting from / to /login');
+        return '/login';
+      },
+    ),
     GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
     GoRoute(
       path: '/register',
@@ -66,7 +76,10 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/reset-password',
-      builder: (context, state) => const ResetPasswordPage(),
+      builder: (context, state) {
+        debugPrint('ROUTER: Building ResetPasswordPage route...');
+        return const ResetPasswordPage();
+      },
     ),
     GoRoute(path: '/home', builder: (context, state) => const HomePage()),
     GoRoute(

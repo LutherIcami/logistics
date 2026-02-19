@@ -19,6 +19,7 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('APP_DEBUG: Building App widget...');
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => di.sl<AuthProvider>()),

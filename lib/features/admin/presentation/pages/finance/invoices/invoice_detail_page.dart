@@ -8,7 +8,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../providers/finance_provider.dart';
 import '../../../../domain/models/finance_models.dart';
 
@@ -175,7 +175,7 @@ class InvoiceDetailPage extends StatelessWidget {
 
             // Try to open safely
             try {
-              final result = await OpenFile.open(filePath);
+              final result = await OpenFilex.open(filePath);
               if (result.type != ResultType.done &&
                   result.type != ResultType.noAppToOpen) {
                 debugPrint('Could not open file: ${result.message}');

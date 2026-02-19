@@ -6,7 +6,7 @@ import 'package:projo/features/customer/domain/models/order_model.dart';
 import 'package:provider/provider.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_file_plus/open_file_plus.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../providers/finance_provider.dart';
 import '../../../../domain/models/finance_models.dart';
 
@@ -320,7 +320,7 @@ class _OrderSelectionPageState extends State<OrderSelectionPage> {
       }
 
       // Convert to CSV string
-      String csv = const ListToCsvConverter().convert(csvData);
+      final String csvDataString = CsvEncoder().convert(csvData);
 
       // Get downloads directory
       Directory? directory;
@@ -341,7 +341,7 @@ class _OrderSelectionPageState extends State<OrderSelectionPage> {
 
       // Write file
       final file = File(filePath);
-      await file.writeAsString(csv);
+      await file.writeAsString(csvDataString);
 
       // Show success message
       if (mounted) {
@@ -355,7 +355,7 @@ class _OrderSelectionPageState extends State<OrderSelectionPage> {
               label: 'OPEN',
               textColor: Colors.white,
               onPressed: () {
-                OpenFile.open(filePath);
+                OpenFilex.open(filePath);
               },
             ),
             duration: const Duration(seconds: 5),

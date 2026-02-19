@@ -13,7 +13,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
       final response = await client
           .from('invoices')
           .select()
-          .order('issueDate', ascending: false);
+          .order('issue_date', ascending: false);
       return (response as List).map((json) => Invoice.fromJson(json)).toList();
     } catch (e) {
       throw Exception('Failed to fetch invoices: $e');

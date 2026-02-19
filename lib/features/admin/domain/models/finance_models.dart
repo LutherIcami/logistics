@@ -20,13 +20,13 @@ class InvoiceItem {
   Map<String, dynamic> toJson() => {
     'description': description,
     'quantity': quantity,
-    'unitPrice': unitPrice,
+    'unit_price': unitPrice,
   };
 
   factory InvoiceItem.fromJson(Map<String, dynamic> json) => InvoiceItem(
     description: json['description'],
     quantity: json['quantity'],
-    unitPrice: json['unitPrice'].toDouble(),
+    unitPrice: (json['unit_price'] ?? json['unitPrice']).toDouble(),
   );
 }
 
@@ -57,30 +57,30 @@ class Invoice {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'customerId': customerId,
-    'customerName': customerName,
-    'issueDate': issueDate.toIso8601String(),
-    'dueDate': dueDate.toIso8601String(),
+    'customer_id': customerId,
+    'customer_name': customerName,
+    'issue_date': issueDate.toIso8601String(),
+    'due_date': dueDate.toIso8601String(),
     'status': status.name,
     'notes': notes,
-    'orderId': orderId,
+    'order_id': orderId,
     'items': items.map((e) => e.toJson()).toList(),
-    'totalAmount': totalAmount,
+    'total_amount': totalAmount,
   };
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
     id: json['id'],
-    customerId: json['customerId'],
-    customerName: json['customerName'],
-    issueDate: DateTime.parse(json['issueDate']),
-    dueDate: DateTime.parse(json['dueDate']),
+    customerId: json['customer_id'] ?? json['customerId'],
+    customerName: json['customer_name'] ?? json['customerName'],
+    issueDate: DateTime.parse(json['issue_date'] ?? json['issueDate']),
+    dueDate: DateTime.parse(json['due_date'] ?? json['dueDate']),
     items: (json['items'] as List).map((e) => InvoiceItem.fromJson(e)).toList(),
     status: InvoiceStatus.values.firstWhere(
       (e) => e.name == json['status'],
       orElse: () => InvoiceStatus.draft,
     ),
     notes: json['notes'],
-    orderId: json['orderId'],
+    orderId: json['order_id'] ?? json['orderId'],
   );
 
   Invoice copyWith({
@@ -133,7 +133,7 @@ class FinancialTransaction {
     'amount': amount,
     'date': date.toIso8601String(),
     'description': description,
-    'referenceId': referenceId,
+    'reference_id': referenceId,
     'category': category?.name,
   };
 
@@ -144,7 +144,7 @@ class FinancialTransaction {
         amount: json['amount'].toDouble(),
         date: DateTime.parse(json['date']),
         description: json['description'],
-        referenceId: json['referenceId'],
+        referenceId: json['reference_id'] ?? json['referenceId'],
         category: json['category'] != null
             ? ExpenseCategory.values.firstWhere(
                 (e) => e.name == json['category'],
