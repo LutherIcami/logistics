@@ -36,7 +36,8 @@ class _TripDetailPageState extends State<TripDetailPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.forum_rounded),
-            onPressed: () => context.push('/driver/chat/${widget.tripId}'),
+            onPressed: () =>
+                context.push('/chat/${widget.tripId}/driver/Driver'),
           ),
         ],
       ),

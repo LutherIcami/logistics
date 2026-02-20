@@ -323,9 +323,14 @@ class DriverProfilePage extends StatelessWidget {
                       _ProfileInfoTile(
                         icon: Icons.local_shipping_rounded,
                         label: 'Assigned Vehicle',
-                        value: driver.currentVehicle ?? 'Not assigned',
+                        value:
+                            provider.assignedVehicle?.displayName ??
+                            driver.currentVehicle ??
+                            'Not assigned',
                         iconColor: Colors.orange.shade700,
-                        valueStyle: driver.currentVehicle == null
+                        valueStyle:
+                            (provider.assignedVehicle == null &&
+                                driver.currentVehicle == null)
                             ? TextStyle(
                                 color: Colors.grey[500],
                                 fontStyle: FontStyle.italic,

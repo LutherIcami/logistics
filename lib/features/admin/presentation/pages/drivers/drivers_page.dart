@@ -249,20 +249,36 @@ class _DriverListItem extends StatelessWidget {
           driver.email,
           style: TextStyle(color: Colors.grey[500], fontSize: 11),
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: _getStatusColor(driver.status).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Text(
-            driver.status.toUpperCase(),
-            style: TextStyle(
-              color: _getStatusColor(driver.status),
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: _getStatusColor(driver.status).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                driver.status.toUpperCase(),
+                style: TextStyle(
+                  color: _getStatusColor(driver.status),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            _QuickActionTile(
+              icon: Icons.call_outlined,
+              color: Colors.green,
+              onTap: () {},
+            ),
+            _QuickActionTile(
+              icon: Icons.chat_bubble_outline_rounded,
+              color: Colors.blue,
+              onTap: () => context.push('/chat/ORDER-MOCK-ID/admin/Admin'),
+            ),
+          ],
         ),
       ),
     );
@@ -360,6 +376,35 @@ class _PerformanceCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionTile({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, size: 16, color: color),
       ),
     );
   }

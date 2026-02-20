@@ -7,6 +7,7 @@ import '../../../driver/domain/models/trip_model.dart';
 import '../../../../app/di/injection_container.dart' as di;
 import '../../../../features/common/domain/models/notification_model.dart';
 import '../../../../features/common/domain/repositories/notification_repository.dart';
+import '../../data/repositories/driver_repository.dart';
 import 'package:uuid/uuid.dart';
 
 class ShipmentProvider extends ChangeNotifier {
@@ -30,10 +31,12 @@ class ShipmentProvider extends ChangeNotifier {
       .length;
   int get activeCount => _shipments.where((s) => s.isInTransit).length;
   int get completedCount => _shipments.where((s) => s.isDelivered).length;
+  int get cancelledCount => _shipments.where((s) => s.isCancelled).length;
 
   ShipmentProvider()
     : _repository = di.sl<OrderRepository>(),
       _tripRepository = di.sl<TripRepository>(),
+      _driverRepository = di.sl<DriverRepository>(),
       _notificationRepository = di.sl<NotificationRepository>() {
     loadShipments();
     _initRealtimeSubscription();
@@ -41,6 +44,7 @@ class ShipmentProvider extends ChangeNotifier {
 
   final OrderRepository _repository;
   final TripRepository _tripRepository;
+  final DriverRepository _driverRepository;
   final NotificationRepository _notificationRepository;
   StreamSubscription<List<Order>>? _subscription;
 
@@ -254,6 +258,42 @@ class ShipmentProvider extends ChangeNotifier {
     if (index != -1) {
       _shipments[index] = _shipments[index].copyWith(status: newStatus);
       _applyFilter();
+      notifyListeners();
+    }
+  }
+
+  Future<void> broadcastMessage(String message, {String? status}) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final drivers = await _driverRepository.getDrivers();
+      final targetDrivers = status == null
+          ? drivers.where((d) => d.status == 'active').toList()
+          : drivers
+                .where((d) => d.status.toLowerCase() == status.toLowerCase())
+                .toList();
+
+      const uuid = Uuid();
+      for (final driver in targetDrivers) {
+        final notification = AppNotification(
+          id: uuid.v4(),
+          userId: driver.id,
+          title: status == null
+              ? 'Fleet Wide Broadcast'
+              : 'Sector Status Check',
+          message: message,
+          type: 'broadcast',
+          isRead: false,
+          createdAt: DateTime.now(),
+        );
+        await _notificationRepository.sendNotification(notification);
+      }
+      _error = null;
+    } catch (e) {
+      _error = 'Failed to send broadcast: $e';
+    } finally {
+      _isLoading = false;
       notifyListeners();
     }
   }

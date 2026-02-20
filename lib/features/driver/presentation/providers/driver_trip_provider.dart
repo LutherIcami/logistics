@@ -372,7 +372,7 @@ class DriverTripProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = 'Failed to update driver';
+      _error = 'Failed to update driver: $e';
       notifyListeners();
       return false;
     }

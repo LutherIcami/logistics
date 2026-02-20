@@ -32,7 +32,8 @@ class ShipmentDetailAdminPage extends StatelessWidget {
             actions: [
               IconButton(
                 icon: const Icon(Icons.forum_rounded),
-                onPressed: () => context.push('/admin/chat/${shipment.id}'),
+                onPressed: () =>
+                    context.push('/chat/${shipment.id}/admin/Admin'),
               ),
               IconButton(
                 icon: const Icon(Icons.edit),

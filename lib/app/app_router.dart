@@ -59,6 +59,14 @@ final GoRouter appRouter = GoRouter(
       Scaffold(body: Center(child: Text('Routing Error: ${state.error}'))),
   routes: [
     GoRoute(
+      path: '/chat/:orderId/:role/:userName',
+      builder: (context, state) => ChatPage(
+        orderId: state.pathParameters['orderId']!,
+        currentUserRole: state.pathParameters['role']!,
+        currentUserName: state.pathParameters['userName'],
+      ),
+    ),
+    GoRoute(
       path: '/',
       redirect: (context, state) {
         debugPrint('ROUTER: Redirecting from / to /login');
@@ -86,13 +94,6 @@ final GoRouter appRouter = GoRouter(
       path: '/admin',
       builder: (context, state) => const AdminDashboard(),
       routes: [
-        GoRoute(
-          path: 'chat/:orderId',
-          builder: (context, state) => ChatPage(
-            orderId: state.pathParameters['orderId']!,
-            currentUserRole: 'admin',
-          ),
-        ),
         GoRoute(
           path: 'drivers',
           builder: (context, state) => const DriversPage(),
@@ -297,13 +298,6 @@ final GoRouter appRouter = GoRouter(
               TripDetailPage(tripId: state.pathParameters['id']!),
         ),
         GoRoute(
-          path: 'chat/:orderId',
-          builder: (context, state) => ChatPage(
-            orderId: state.pathParameters['orderId']!,
-            currentUserRole: 'driver',
-          ),
-        ),
-        GoRoute(
           path: 'profile/edit',
           builder: (context, state) => const DriverEditFormPage(),
         ),
@@ -329,13 +323,6 @@ final GoRouter appRouter = GoRouter(
           path: 'orders/:id',
           builder: (context, state) =>
               OrderDetailPage(orderId: state.pathParameters['id']!),
-        ),
-        GoRoute(
-          path: 'chat/:orderId',
-          builder: (context, state) => ChatPage(
-            orderId: state.pathParameters['orderId']!,
-            currentUserRole: 'customer',
-          ),
         ),
         GoRoute(
           path: 'profile/edit',

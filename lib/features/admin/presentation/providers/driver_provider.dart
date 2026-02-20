@@ -23,6 +23,19 @@ class DriverProvider extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get statusFilter => _statusFilter;
 
+  // Driver Status Counts
+  int get activeDriversCount =>
+      _drivers.where((d) => d.status.toLowerCase() == 'active').length;
+  int get idleDriversCount =>
+      _drivers.where((d) => d.status.toLowerCase() == 'idle').length;
+  int get offlineDriversCount => _drivers
+      .where(
+        (d) =>
+            d.status.toLowerCase() == 'offline' ||
+            d.status.toLowerCase() == 'inactive',
+      )
+      .length;
+
   List<Driver> get filteredDrivers => getMappedDrivers(_statusFilter);
 
   List<Driver> getMappedDrivers(String status) {

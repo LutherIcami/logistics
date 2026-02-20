@@ -154,7 +154,9 @@ class _TrackingCard extends StatelessWidget {
                 if (order.driverId != null)
                   IconButton(
                     icon: const Icon(Icons.forum_rounded),
-                    onPressed: () => context.push('/customer/chat/${order.id}'),
+                    onPressed: () => context.push(
+                      '/chat/${order.id}/customer/${order.customerName}',
+                    ),
                   ),
               ],
             ),

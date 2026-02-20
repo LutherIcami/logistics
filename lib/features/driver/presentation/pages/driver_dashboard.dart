@@ -315,6 +315,10 @@ class _DriverDashboardState extends State<DriverDashboard> {
               _buildWelcomeCard(driver),
               const SizedBox(height: 12),
 
+              // Fleet Broadcasts
+              _buildBroadcastList(provider),
+              const SizedBox(height: 12),
+
               // Maintenance Alert
               if (provider.hasMaintenanceAlert) ...[
                 _buildMaintenanceBanner(provider),
@@ -581,6 +585,20 @@ class _DriverDashboardState extends State<DriverDashboard> {
     );
   }
 
+  Widget _buildBroadcastList(DriverTripProvider provider) {
+    final broadcasts = provider.notifications
+        .where((n) => n.type == 'broadcast' && !n.isRead)
+        .toList();
+
+    if (broadcasts.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      children: broadcasts
+          .map((b) => _BroadcastBanner(notification: b))
+          .toList(),
+    );
+  }
+
   Widget _buildMaintenanceBanner(DriverTripProvider provider) {
     final vehicle = provider.assignedVehicle;
     if (vehicle == null) return const SizedBox.shrink();
@@ -819,6 +837,86 @@ class _DriverDashboardState extends State<DriverDashboard> {
               ),
             )
             .toList(),
+      ),
+    );
+  }
+}
+
+class _BroadcastBanner extends StatelessWidget {
+  final dynamic notification;
+
+  const _BroadcastBanner({required this.notification});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.red.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEF4444),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.campaign_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'FLEET COMMAND BROADCAST',
+                  style: TextStyle(
+                    color: Color(0xFFB91C1C),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 11,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  notification.message,
+                  style: const TextStyle(
+                    color: Color(0xFF7F1D1D),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () {
+              context.read<DriverTripProvider>().markNotificationAsRead(
+                notification.id,
+              );
+            },
+            icon: const Icon(
+              Icons.close_rounded,
+              color: Color(0xFFB91C1C),
+              size: 20,
+            ),
+          ),
+        ],
       ),
     );
   }

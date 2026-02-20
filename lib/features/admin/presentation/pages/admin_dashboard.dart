@@ -5,6 +5,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../providers/vehicle_provider.dart';
 import '../providers/shipment_provider.dart';
 import '../providers/finance_provider.dart';
+import '../providers/driver_provider.dart';
 import '../providers/admin_customer_provider.dart';
 import '../widgets/admin_module_card.dart';
 import '../widgets/admin_stat_card.dart';
@@ -47,17 +48,48 @@ class AdminDashboard extends StatelessWidget {
                       customerProvider,
                     ),
                     const SizedBox(height: 32),
+                    _buildSectionTitle('Field Intelligence'),
+                    const SizedBox(height: 16),
+                    _buildDriverStatusRow(context),
+                    const SizedBox(height: 32),
                     _buildSectionTitle('Priority Directives'),
                     const SizedBox(height: 16),
                     _buildQuickActions(context),
                     const SizedBox(height: 32),
-                    _buildSectionTitle('Operational Command'),
-                    const SizedBox(height: 16),
-                    _buildModuleGrid(context),
-                    const SizedBox(height: 32),
-                    _buildSectionTitle('Live Terminal Activity'),
-                    const SizedBox(height: 16),
-                    _buildActivityFeed(),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('Operational Command'),
+                              const SizedBox(height: 16),
+                              _buildModuleGrid(context),
+                            ],
+                          ),
+                        ),
+                        if (Responsive.isDesktop(context)) ...[
+                          const SizedBox(width: 32),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSectionTitle('Live Terminal activity'),
+                                const SizedBox(height: 16),
+                                _buildActivityFeed(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (!Responsive.isDesktop(context)) ...[
+                      const SizedBox(height: 32),
+                      _buildSectionTitle('Live Terminal activity'),
+                      const SizedBox(height: 16),
+                      _buildActivityFeed(),
+                    ],
                     const SizedBox(height: 60),
                   ],
                 ),
@@ -224,7 +256,7 @@ class AdminDashboard extends StatelessWidget {
         onTap: () => context.go('/admin/drivers'),
       ),
       AdminStatCard(
-        title: 'Active Clients',
+        title: 'Client Net',
         value: '${cp.customerCount} Active',
         icon: Icons.people_alt_rounded,
         color: Colors.cyan,
@@ -240,7 +272,7 @@ class AdminDashboard extends StatelessWidget {
               .map(
                 (c) => Padding(
                   padding: const EdgeInsets.only(right: 16),
-                  child: SizedBox(width: 280, child: c),
+                  child: SizedBox(width: 200, child: c),
                 ),
               )
               .toList(),
@@ -261,13 +293,278 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
+  Widget _buildDriverStatusRow(BuildContext context) {
+    final driverProvider = context.watch<DriverProvider>();
+
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.online_prediction_rounded,
+                        color: Colors.greenAccent,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'DRIVER NETWORK',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Real-time connectivity status',
+                            style: TextStyle(
+                              color: Colors.white60,
+                              fontSize: 11,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => context.go('/admin/drivers'),
+                icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                label: const Text('MANAGE DRIVERS'),
+                style: TextButton.styleFrom(foregroundColor: Colors.blueAccent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Responsive(
+            mobile: Column(
+              children: [
+                _buildStatusItem(
+                  context,
+                  'Active Drivers',
+                  '${driverProvider.activeDriversCount}',
+                  Colors.green,
+                  'active',
+                ),
+                const SizedBox(height: 12),
+                _buildStatusItem(
+                  context,
+                  'Idle Personnel',
+                  '${driverProvider.idleDriversCount}',
+                  Colors.orange,
+                  'idle',
+                ),
+                const SizedBox(height: 12),
+                _buildStatusItem(
+                  context,
+                  'Offline/Off-duty',
+                  '${driverProvider.offlineDriversCount}',
+                  Colors.grey,
+                  'offline',
+                ),
+              ],
+            ),
+            desktop: Row(
+              children: [
+                Expanded(
+                  child: _buildStatusItem(
+                    context,
+                    'Active Drivers',
+                    '${driverProvider.activeDriversCount}',
+                    Colors.greenAccent,
+                    'active',
+                  ),
+                ),
+                const VerticalDivider(color: Colors.white10),
+                Expanded(
+                  child: _buildStatusItem(
+                    context,
+                    'Idle Personnel',
+                    '${driverProvider.idleDriversCount}',
+                    Colors.orangeAccent,
+                    'idle',
+                  ),
+                ),
+                const VerticalDivider(color: Colors.white10),
+                Expanded(
+                  child: _buildStatusItem(
+                    context,
+                    'Offline/Off-duty',
+                    '${driverProvider.offlineDriversCount}',
+                    Colors.white30,
+                    'offline',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusItem(
+    BuildContext context,
+    String label,
+    String value,
+    Color color,
+    String status,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.03),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.4),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 12),
+          if (status != 'offline')
+            InkWell(
+              onTap: () {
+                context.read<ShipmentProvider>().broadcastMessage(
+                  'Sector Check: All $label please confirm status.',
+                  status: status,
+                );
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Ping transmitted to all $label'),
+                    backgroundColor: const Color(0xFF0F172A),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.bolt_rounded, size: 14, color: color),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuickActions(BuildContext context) {
     var actions = [
       _QuickActionBtn(
-        icon: Icons.add_task_rounded,
-        label: 'Assign Trip',
-        onTap: () => context.go('/admin/shipments'),
-        color: Colors.indigo,
+        icon: Icons.broadcast_on_personal_rounded,
+        label: 'Broadcast Staff',
+        onTap: () {
+          final controller = TextEditingController();
+          // Show a simple dialog for now to broadcast to all drivers
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('New Fleet Broadcast'),
+              content: TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  hintText: 'Enter message to all active drivers...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton.icon(
+                  onPressed: () async {
+                    final message = controller.text;
+                    Navigator.pop(context);
+                    if (message.isNotEmpty) {
+                      await context.read<ShipmentProvider>().broadcastMessage(
+                        message,
+                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Broadcast sent to all active drivers!',
+                            ),
+                            backgroundColor: Colors.indigo,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Transmit'),
+                ),
+              ],
+            ),
+          );
+        },
+        color: Colors.redAccent,
       ),
       _QuickActionBtn(
         icon: Icons.person_add_alt_1_rounded,
@@ -327,26 +624,36 @@ class AdminDashboard extends StatelessWidget {
       mainAxisSpacing: 16,
       childAspectRatio: 1.1,
       children: [
-        AdminModuleCard(
-          title: 'Fleet & Assets',
-          subtitle: 'Maintenance & diagnostics',
-          icon: Icons.token_rounded,
-          color: Colors.blue,
-          onTap: () => context.go('/admin/fleet'),
+        Consumer<VehicleProvider>(
+          builder: (context, vp, _) => AdminModuleCard(
+            title: 'Fleet & Assets',
+            subtitle: vp.vehiclesNeedingMaintenance.isNotEmpty
+                ? '${vp.vehiclesNeedingMaintenance.length} ACTION REQUIRED'
+                : 'Maintenance & diagnostics',
+            icon: Icons.token_rounded,
+            color: Colors.blue,
+            onTap: () => context.go('/admin/fleet'),
+          ),
         ),
-        AdminModuleCard(
-          title: 'Operations Staff',
-          subtitle: 'Driver pool management',
-          icon: Icons.shield_rounded,
-          color: Colors.orange,
-          onTap: () => context.go('/admin/drivers'),
+        Consumer<ShipmentProvider>(
+          builder: (context, sp, _) => AdminModuleCard(
+            title: 'Operations Staff',
+            subtitle: '${sp.activeCount} DRIVERS ON-MISSION',
+            icon: Icons.shield_rounded,
+            color: Colors.orange,
+            onTap: () => context.go('/admin/drivers'),
+          ),
         ),
-        AdminModuleCard(
-          title: 'Directives',
-          subtitle: 'Shipment & load control',
-          icon: Icons.radar_rounded,
-          color: Colors.purple,
-          onTap: () => context.go('/admin/shipments'),
+        Consumer<ShipmentProvider>(
+          builder: (context, sp, _) => AdminModuleCard(
+            title: 'Directives',
+            subtitle: sp.pendingCount > 0
+                ? '${sp.pendingCount} PENDING ASSIGNMENT'
+                : 'Shipment & load control',
+            icon: Icons.radar_rounded,
+            color: Colors.purple,
+            onTap: () => context.go('/admin/shipments'),
+          ),
         ),
         AdminModuleCard(
           title: 'Clients',
@@ -398,6 +705,8 @@ class AdminDashboard extends StatelessWidget {
             'time': timeAgo,
             'user': shipment.driverName ?? 'Driver',
             'timestamp': shipment.deliveryDate ?? DateTime.now(),
+            'type': 'shipment',
+            'id': shipment.id,
           });
         }
 
@@ -414,26 +723,43 @@ class AdminDashboard extends StatelessWidget {
             'time': 'Pending',
             'user': 'Fleet System',
             'timestamp': DateTime.now().subtract(const Duration(hours: 1)),
+            'type': 'maintenance',
           });
         }
 
-        // Get recently added vehicles (last 7 days)
-        final recentVehicles = vehicleProvider.vehicles
-            .where((v) {
-              // Assuming vehicles have a createdAt field, or we can use a simple check
-              return v.status == 'active';
-            })
-            .take(2)
-            .toList();
+        // Get assigned but not yet in transit shipments (last 3)
+        final assignedShipments = shipmentProvider.shipments
+            .where((s) => s.isAssigned && !s.isInTransit)
+            .take(3);
 
-        for (var vehicle in recentVehicles) {
+        for (var shipment in assignedShipments) {
           activities.add({
-            'icon': Icons.local_shipping_rounded,
+            'icon': Icons.assignment_ind_rounded,
+            'color': Colors.purple,
+            'title': 'Mission Assigned: ${shipment.cargoType}',
+            'time': 'Awaiting start',
+            'user': shipment.driverName ?? 'Driver',
+            'timestamp': DateTime.now().subtract(const Duration(minutes: 15)),
+            'type': 'mission',
+            'id': shipment.id,
+          });
+        }
+
+        // Get in-transit shipments (last 3)
+        final inTransitShipments = shipmentProvider.shipments
+            .where((s) => s.isInTransit)
+            .take(3);
+
+        for (var shipment in inTransitShipments) {
+          activities.add({
+            'icon': Icons.radar_rounded,
             'color': Colors.blue,
-            'title': 'Fleet Expand: ${vehicle.registrationNumber}',
-            'time': 'Recently added',
-            'user': authProvider.user?.fullName ?? 'Admin',
-            'timestamp': DateTime.now().subtract(const Duration(days: 1)),
+            'title': 'Active Mission: #${shipment.id.substring(0, 8)}',
+            'time': 'In Transit',
+            'user': shipment.driverName ?? 'Driver',
+            'timestamp': DateTime.now().subtract(const Duration(minutes: 5)),
+            'type': 'mission',
+            'id': shipment.id,
           });
         }
 
@@ -497,13 +823,31 @@ class AdminDashboard extends StatelessWidget {
                   title: topActivities[i]['title'] as String,
                   time: topActivities[i]['time'] as String,
                   user: topActivities[i]['user'] as String,
+                  actionIcon:
+                      (topActivities[i]['type'] == 'mission' ||
+                          topActivities[i]['type'] == 'shipment')
+                      ? Icons.chat_bubble_outline_rounded
+                      : (topActivities[i]['type'] == 'maintenance'
+                            ? Icons.build_rounded
+                            : null),
+                  onActionPressed: () {
+                    if (topActivities[i]['type'] == 'mission' ||
+                        topActivities[i]['type'] == 'shipment') {
+                      final orderId = topActivities[i]['id'] as String;
+                      context.push(
+                        '/chat/$orderId/admin/${authProvider.user?.fullName ?? 'Admin'}',
+                      );
+                    } else if (topActivities[i]['type'] == 'maintenance') {
+                      context.go('/admin/vehicles');
+                    }
+                  },
                   onTap: () {
                     final title = topActivities[i]['title'] as String;
                     if (title.contains('Shipment')) {
                       context.go('/admin/shipments');
+                    } else if (title.contains('Mission')) {
+                      context.go('/admin/shipments');
                     } else if (title.contains('Maintenance')) {
-                      context.go('/admin/fleet');
-                    } else if (title.contains('Fleet Expand')) {
                       context.go('/admin/fleet');
                     }
                   },
@@ -617,6 +961,8 @@ class _ActivityItem extends StatelessWidget {
   final String time;
   final String user;
   final VoidCallback? onTap;
+  final IconData? actionIcon;
+  final VoidCallback? onActionPressed;
 
   const _ActivityItem({
     required this.icon,
@@ -625,21 +971,24 @@ class _ActivityItem extends StatelessWidget {
     required this.time,
     required this.user,
     this.onTap,
+    this.actionIcon,
+    this.onActionPressed,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(icon, color: color, size: 20),
             ),
@@ -651,24 +1000,49 @@ class _ActivityItem extends StatelessWidget {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       fontSize: 13,
                       color: Color(0xFF1E293B),
+                      letterSpacing: -0.2,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    'By $user • $time',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  Row(
+                    children: [
+                      Text(
+                        user,
+                        style: TextStyle(
+                          color: Colors.blueAccent.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        ' • $time',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            if (onTap != null)
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 16,
-                color: Colors.grey[400],
+            if (actionIcon != null)
+              IconButton(
+                icon: Icon(actionIcon, size: 20, color: Colors.blue),
+                onPressed: onActionPressed,
+              ),
+            if (onTap != null && actionIcon == null)
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 14,
+                  color: Colors.grey[400],
+                ),
               ),
           ],
         ),
